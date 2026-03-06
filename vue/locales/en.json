@@ -1,0 +1,410 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{n} days ago",
+    "noData": "No data",
+    "viewAll": "View all",
+    "reset": "Reset"
+  },
+  "nav": {
+    "client": {
+      "home": "Home",
+      "training": "Calendar",
+      "log": "Log",
+      "nutrition": "Nutrition",
+      "progress": "Progress",
+      "settings": "Settings",
+      "logout": "Log out"
+    },
+    "trainer": {
+      "dashboard": "Dashboard",
+      "clients": "Clients",
+      "reports": "Reports",
+      "settings": "Settings",
+      "logout": "Log out"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Enter your credentials to access",
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "password": "Password",
+      "submit": "Sign in",
+      "loading": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up here"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Sign up to get started",
+      "roleTrainer": "Trainer",
+      "roleClient": "Client",
+      "name": "Full name",
+      "namePlaceholder": "John Smith",
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "loading": "Creating account...",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "errors": {
+      "fillFields": "Please fill in all fields",
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "createAccount": "Error creating account",
+      "register": "Error signing up",
+      "invalidCredential": "Incorrect email or password",
+      "userNotFound": "No account found with that email",
+      "tooManyRequests": "Too many attempts. Try again later",
+      "login": "Error signing in"
+    }
+  },
+  "client": {
+    "dashboard": {
+      "greetingMorning": "Good morning",
+      "greetingAfternoon": "Good afternoon",
+      "greetingEvening": "Good evening",
+      "logWorkout": "Log workout",
+      "viewProgress": "View progress",
+      "completedToday": "completed today",
+      "stats": {
+        "weekWorkouts": "Week workouts",
+        "mealsToday": "Meals today",
+        "currentWeight": "Current weight",
+        "streak": "Streak"
+      },
+      "workoutToday": "Today's workout",
+      "nutritionToday": "Today's nutrition",
+      "startWorkout": "Start workout",
+      "noWorkout": "No workout scheduled",
+      "noPlan": "No plan assigned",
+      "contactTrainer": "Contact your trainer"
+    },
+    "training": {
+      "title": "Calendar",
+      "myTraining": "My Training",
+      "noPlan": "No plan assigned",
+      "contactTrainer": "Contact your trainer to have a training plan assigned.",
+      "exercises": "Plan exercises",
+      "sessionLogged": "Session logged",
+      "volume": "Volume",
+      "maxWeight": "Max weight",
+      "sets": "Sets",
+      "effort": "Effort",
+      "duration": "Duration",
+      "notes": "Notes",
+      "logWorkout": "Log workout",
+      "close": "Close"
+    },
+    "nutrition": {
+      "title": "Nutrition",
+      "subtitle": "Plan · Log · Adherence",
+      "noPlan": "No nutrition plan",
+      "dayPlan": "Day plan",
+      "noMeals": "No meals configured for this day.",
+      "days": {
+        "short": {
+          "0": "sun",
+          "1": "mon",
+          "2": "tue",
+          "3": "wed",
+          "4": "thu",
+          "5": "fri",
+          "6": "sat"
+        },
+        "full": {
+          "domingo": "sunday",
+          "lunes": "monday",
+          "martes": "tuesday",
+          "miercoles": "wednesday",
+          "jueves": "thursday",
+          "viernes": "friday",
+          "sabado": "saturday"
+        }
+      }
+    },
+    "logWorkout": {
+      "title": "Log Workout",
+      "workoutName": "Workout name",
+      "saving": "Saving",
+      "save": "Save",
+      "session": "Session",
+      "date": "Date",
+      "duration": "Duration",
+      "effort": "Effort",
+      "notes": "Notes",
+      "todayPlan": "Today's plan",
+      "extras": "Extras",
+      "addExtra": "Add extra exercise",
+      "saveWorkout": "Save Workout",
+      "cancel": "Cancel",
+      "effortLow": "Low",
+      "effortMedium": "Medium",
+      "effortHigh": "High"
+    },
+    "progress": {
+      "label": "Dashboard",
+      "title": "My Progress",
+      "subtitle": "Track your evolution and achievements over time"
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Manage your profile and preferences",
+      "personalInfo": "Personal Information",
+      "fullName": "Full name",
+      "email": "Email",
+      "age": "Age",
+      "height": "Height (cm)",
+      "weight": "Weight (kg)",
+      "goal": "Goal",
+      "goals": {
+        "weightLoss": "Weight loss",
+        "muscleGain": "Muscle gain",
+        "maintenance": "Maintenance",
+        "endurance": "Endurance"
+      },
+      "saveChanges": "Save changes",
+      "appearance": "Appearance",
+      "appearanceDesc": "Language, colors and interface density",
+      "security": "Security",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "updatePassword": "Update password",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "metrics": {
+      "title": "Body evolution",
+      "subtitle": "Measurements, composition, circumferences, photos and notes.",
+      "tabs": {
+        "overview": "Overview",
+        "composition": "Composition",
+        "measurements": "Circumferences",
+        "myMeasurements": "My measurements",
+        "photos": "Photos",
+        "history": "History"
+      },
+      "loading": "Loading measurements…",
+      "stats": {
+        "weight": "Weight",
+        "fatPct": "% Fat",
+        "waist": "Waist",
+        "abdomen": "Abdomen (navel)"
+      },
+      "latestPhotos": "Latest photos",
+      "noPhotos": "No photos yet.",
+      "photoTip": "Tip: paste image URLs when logging a measurement.",
+      "composition": {
+        "title": "Body composition",
+        "desc": "Record what you have: smart scale, calipers, etc.",
+        "weightKg": "Weight (kg)",
+        "bodyFatPct": "% Fat",
+        "musclePct": "% Muscle",
+        "waterPct": "% Water",
+        "visceralFat": "Visceral fat",
+        "boneMassKg": "Bone mass (kg)",
+        "bmrKcal": "BMR (kcal)"
+      },
+      "record": {
+        "title": "Record",
+        "date": "Date",
+        "protocol": "Protocol (waist/abdomen)",
+        "protocolNavel": "Navel",
+        "protocolNatural": "Natural waist",
+        "notes": "Notes",
+        "notesPlaceholder": "E.g.: poor sleep, high stress, diet change, etc.",
+        "photos": "Photos (URLs) — one per line or comma-separated",
+        "photosPlaceholder": "https://..."
+      },
+      "saveMetric": "Save measurement",
+      "saveChanges": "Save changes",
+      "saving": "Saving...",
+      "clear": "Clear",
+      "editing": "Editing measurement:",
+      "measurements": {
+        "title": "Circumferences (cm)",
+        "desc": "Record what you measure today.",
+        "torso": "Torso",
+        "arms": "Arms",
+        "legs": "Legs",
+        "neck": "Neck",
+        "shoulders": "Shoulders",
+        "chest": "Chest",
+        "underChest": "Under chest",
+        "waist": "Waist",
+        "abdomen": "Abdomen (navel)",
+        "hips": "Hips",
+        "armRelaxedLeft": "Arm relaxed L",
+        "armRelaxedRight": "Arm relaxed R",
+        "armFlexedLeft": "Arm flexed L",
+        "armFlexedRight": "Arm flexed R",
+        "forearmLeft": "Forearm L",
+        "forearmRight": "Forearm R",
+        "thighLeft": "Thigh L",
+        "thighRight": "Thigh R",
+        "calfLeft": "Calf L",
+        "calfRight": "Calf R"
+      },
+      "myMeasurements": {
+        "title": "Today's record",
+        "desc": "Enter the data you have available. Not all fields are required.",
+        "detailsTitle": "Details",
+        "notesOptional": "Notes (optional)",
+        "notesPlaceholder": "E.g.: feeling good, started new diet...",
+        "photosOptional": "Photos (URLs, optional)",
+        "photosPlaceholder": "https://... (one per line)",
+        "weightKg": "Weight (kg)",
+        "fatPct": "% Body fat",
+        "waist": "Waist (cm)",
+        "abdomen": "Abdomen / navel (cm)",
+        "hips": "Hips (cm)",
+        "chest": "Chest (cm)"
+      },
+      "photos": {
+        "title": "Photos",
+        "desc": "Photos are key to seeing changes that weight doesn't show. Recommended: front / side / back every 2–4 weeks.",
+        "noPhotos": "No photos logged yet.",
+        "tip": "Tip: paste your photo URLs when logging a measurement."
+      },
+      "history": {
+        "title": "History",
+        "clickToEdit": "Click a row to edit.",
+        "newMetric": "+ New measurement",
+        "registerMetric": "+ Log measurement",
+        "noMetrics": "No measurements yet.",
+        "date": "Date",
+        "weight": "Weight",
+        "fatPct": "% Fat",
+        "waist": "Waist",
+        "abdomen": "Abdomen",
+        "hips": "Hips",
+        "actions": "Actions",
+        "tip": "Tip: measure every 1–2 weeks (circumferences) and photos every 2–4 weeks."
+      },
+      "validation": {
+        "fatRange": "Body fat % seems out of range (2–70).",
+        "weightRange": "Weight seems out of range (20–400 kg).",
+        "needsData": "Add at least one measurement (or a note/photo) before saving.",
+        "saved": "Measurement saved.",
+        "updated": "Measurement updated.",
+        "deleteConfirm": "Delete this measurement? This cannot be undone.",
+        "deleteError": "Error deleting"
+      }
+    }
+  },
+  "trainer": {
+    "dashboard": {
+      "greeting": "Hello",
+      "defaultName": "Trainer",
+      "subtitle": "Here's your summary for today",
+      "stats": {
+        "activeClients": "Active clients",
+        "attendance": "Attendance today",
+        "workoutsLogged": "Workouts logged",
+        "avgAdherence": "Avg adherence"
+      },
+      "recentActivity": "Recent activity",
+      "noActivity": "No recent activity",
+      "clientsWithoutPlan": "Clients without updated plan",
+      "viewAll": "View all",
+      "allHavePlans": "All clients have plans assigned",
+      "noGoal": "No goal defined",
+      "quickActions": "Quick actions",
+      "newClient": "New client",
+      "trainingPlan": "Training plan",
+      "nutritionPlan": "Nutrition plan",
+      "viewReports": "View reports",
+      "exercises": "exercises completed",
+      "logTypes": {
+        "training": "Training",
+        "meal": "Meal",
+        "diary": "Diary"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Manage your profile and preferences",
+      "profile": "Profile",
+      "profileDesc": "Your account information",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "saving": "Saving...",
+      "saveChanges": "Save changes",
+      "savedSuccess": "Changes saved successfully",
+      "exerciseLibrary": "Exercise library",
+      "exerciseLibraryDesc": "Exercises available for your plans",
+      "trainingLibrary": "Training plan library",
+      "trainingLibraryDesc": "Created training plans"
+    }
+  },
+  "settings": {
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Customize your visual experience",
+      "language": {
+        "title": "Language",
+        "subtitle": "Select the interface language",
+        "es": "Español",
+        "en": "English",
+        "pt": "Português"
+      },
+      "density": {
+        "title": "UI Density",
+        "subtitle": "Control spacing and element sizing",
+        "compact": "Compact",
+        "normal": "Normal",
+        "comfortable": "Comfortable",
+        "compact_desc": "More information in less space",
+        "normal_desc": "Balance between content and spacing",
+        "comfortable_desc": "More spacing for better readability"
+      },
+      "theme": {
+        "title": "Global theme",
+        "subtitle": "Base colors for the application",
+        "primary": "Primary color",
+        "secondary": "Secondary color",
+        "accent": "Accent",
+        "danger": "Danger / Error",
+        "background": "Background",
+        "surface": "Surface",
+        "textPrimary": "Primary text",
+        "textMuted": "Secondary text",
+        "border": "Borders",
+        "reset_defaults": "Reset defaults",
+        "invalid_hex": "Invalid hex color"
+      },
+      "views": {
+        "title": "Per-view themes",
+        "subtitle": "Customize colors for each section",
+        "customize_toggle": "Customize this view",
+        "active_overrides": "No customizations | {n} view customized | {n} views customized",
+        "dashboard": "Dashboard",
+        "calendar": "Calendar",
+        "nutrition": "Nutrition",
+        "training": "Training",
+        "metrics": "Metrics",
+        "tasks": "Tasks"
+      },
+      "save": "Save configuration",
+      "reset_all": "Reset all",
+      "save_success": "Configuration saved successfully",
+      "save_error": "Error saving configuration"
+    }
+  }
+}

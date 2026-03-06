@@ -1,0 +1,410 @@
+{
+  "common": {
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "daysAgo": "Há {n} dias",
+    "noData": "Sem dados",
+    "viewAll": "Ver todos",
+    "reset": "Restaurar"
+  },
+  "nav": {
+    "client": {
+      "home": "Início",
+      "training": "Calendário",
+      "log": "Registrar",
+      "nutrition": "Nutrição",
+      "progress": "Progresso",
+      "settings": "Configurações",
+      "logout": "Sair"
+    },
+    "trainer": {
+      "dashboard": "Dashboard",
+      "clients": "Clientes",
+      "reports": "Relatórios",
+      "settings": "Configurações",
+      "logout": "Sair"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bem-vindo de volta",
+      "subtitle": "Digite suas credenciais para acessar",
+      "email": "E-mail",
+      "emailPlaceholder": "voce@email.com",
+      "password": "Senha",
+      "submit": "Entrar",
+      "loading": "Entrando...",
+      "noAccount": "Não tem uma conta?",
+      "register": "Cadastre-se aqui"
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Cadastre-se para começar",
+      "roleTrainer": "Treinador",
+      "roleClient": "Cliente",
+      "name": "Nome completo",
+      "namePlaceholder": "João Silva",
+      "email": "E-mail",
+      "emailPlaceholder": "voce@email.com",
+      "password": "Senha",
+      "confirmPassword": "Confirmar senha",
+      "submit": "Criar conta",
+      "loading": "Criando conta...",
+      "hasAccount": "Já tem uma conta?",
+      "login": "Entre aqui"
+    },
+    "errors": {
+      "fillFields": "Por favor, preencha todos os campos",
+      "passwordMismatch": "As senhas não coincidem",
+      "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+      "createAccount": "Erro ao criar conta",
+      "register": "Erro ao se registrar",
+      "invalidCredential": "E-mail ou senha incorretos",
+      "userNotFound": "Nenhuma conta encontrada com esse e-mail",
+      "tooManyRequests": "Muitas tentativas. Tente mais tarde",
+      "login": "Erro ao entrar"
+    }
+  },
+  "client": {
+    "dashboard": {
+      "greetingMorning": "Bom dia",
+      "greetingAfternoon": "Boa tarde",
+      "greetingEvening": "Boa noite",
+      "logWorkout": "Registrar treino",
+      "viewProgress": "Ver progresso",
+      "completedToday": "concluído hoje",
+      "stats": {
+        "weekWorkouts": "Treinos na semana",
+        "mealsToday": "Refeições hoje",
+        "currentWeight": "Peso atual",
+        "streak": "Sequência"
+      },
+      "workoutToday": "Treino de hoje",
+      "nutritionToday": "Nutrição de hoje",
+      "startWorkout": "Iniciar treino",
+      "noWorkout": "Sem treino programado",
+      "noPlan": "Sem plano atribuído",
+      "contactTrainer": "Contate seu treinador"
+    },
+    "training": {
+      "title": "Calendário",
+      "myTraining": "Meu Treino",
+      "noPlan": "Sem plano atribuído",
+      "contactTrainer": "Entre em contato com seu treinador para que um plano de treino seja atribuído.",
+      "exercises": "Exercícios do plano",
+      "sessionLogged": "Sessão registrada",
+      "volume": "Volume",
+      "maxWeight": "Peso máx.",
+      "sets": "Séries",
+      "effort": "Esforço",
+      "duration": "Duração",
+      "notes": "Notas",
+      "logWorkout": "Registrar treino",
+      "close": "Fechar"
+    },
+    "nutrition": {
+      "title": "Nutrição",
+      "subtitle": "Plano · Registro · Adesão",
+      "noPlan": "Sem plano nutricional",
+      "dayPlan": "Plano do dia",
+      "noMeals": "Nenhuma refeição configurada para este dia.",
+      "days": {
+        "short": {
+          "0": "dom",
+          "1": "seg",
+          "2": "ter",
+          "3": "qua",
+          "4": "qui",
+          "5": "sex",
+          "6": "sáb"
+        },
+        "full": {
+          "domingo": "domingo",
+          "lunes": "segunda-feira",
+          "martes": "terça-feira",
+          "miercoles": "quarta-feira",
+          "jueves": "quinta-feira",
+          "viernes": "sexta-feira",
+          "sabado": "sábado"
+        }
+      }
+    },
+    "logWorkout": {
+      "title": "Registrar Treino",
+      "workoutName": "Nome do treino",
+      "saving": "Salvando",
+      "save": "Salvar",
+      "session": "Sessão",
+      "date": "Data",
+      "duration": "Duração",
+      "effort": "Esforço",
+      "notes": "Notas",
+      "todayPlan": "Plano de hoje",
+      "extras": "Extras",
+      "addExtra": "Adicionar exercício extra",
+      "saveWorkout": "Salvar Treino",
+      "cancel": "Cancelar",
+      "effortLow": "Baixo",
+      "effortMedium": "Médio",
+      "effortHigh": "Alto"
+    },
+    "progress": {
+      "label": "Dashboard",
+      "title": "Meu Progresso",
+      "subtitle": "Acompanhe sua evolução e conquistas ao longo do tempo"
+    },
+    "settings": {
+      "title": "Configurações",
+      "subtitle": "Gerencie seu perfil e preferências",
+      "personalInfo": "Informações Pessoais",
+      "fullName": "Nome completo",
+      "email": "E-mail",
+      "age": "Idade",
+      "height": "Altura (cm)",
+      "weight": "Peso (kg)",
+      "goal": "Objetivo",
+      "goals": {
+        "weightLoss": "Perda de peso",
+        "muscleGain": "Ganho muscular",
+        "maintenance": "Manutenção",
+        "endurance": "Resistência"
+      },
+      "saveChanges": "Salvar alterações",
+      "appearance": "Aparência",
+      "appearanceDesc": "Idioma, cores e densidade da interface",
+      "security": "Segurança",
+      "currentPassword": "Senha atual",
+      "newPassword": "Nova senha",
+      "confirmPassword": "Confirmar nova senha",
+      "updatePassword": "Atualizar senha",
+      "passwordMismatch": "As senhas não coincidem"
+    },
+    "metrics": {
+      "title": "Evolução corporal",
+      "subtitle": "Medições, composição, perímetros, fotos e notas.",
+      "tabs": {
+        "overview": "Resumo",
+        "composition": "Composição",
+        "measurements": "Perímetros",
+        "myMeasurements": "Minhas medidas",
+        "photos": "Fotos",
+        "history": "Histórico"
+      },
+      "loading": "Carregando medições…",
+      "stats": {
+        "weight": "Peso",
+        "fatPct": "% Gordura",
+        "waist": "Cintura",
+        "abdomen": "Abdômen (umbigo)"
+      },
+      "latestPhotos": "Últimas fotos",
+      "noPhotos": "Ainda sem fotos.",
+      "photoTip": "Dica: cole URLs de imagens ao registrar uma medição.",
+      "composition": {
+        "title": "Composição corporal",
+        "desc": "Registre o que tiver: balança inteligente, adipômetro, etc.",
+        "weightKg": "Peso (kg)",
+        "bodyFatPct": "% Gordura",
+        "musclePct": "% Músculo",
+        "waterPct": "% Água",
+        "visceralFat": "Gordura visceral",
+        "boneMassKg": "Massa óssea (kg)",
+        "bmrKcal": "TMB (kcal)"
+      },
+      "record": {
+        "title": "Registro",
+        "date": "Data",
+        "protocol": "Protocolo (cintura/abdômen)",
+        "protocolNavel": "Umbigo (navel)",
+        "protocolNatural": "Cintura natural",
+        "notes": "Notas",
+        "notesPlaceholder": "Ex: dormiu mal, estresse alto, mudança de dieta, etc.",
+        "photos": "Fotos (URLs) — uma por linha ou separadas por vírgula",
+        "photosPlaceholder": "https://..."
+      },
+      "saveMetric": "Salvar medição",
+      "saveChanges": "Salvar alterações",
+      "saving": "Salvando...",
+      "clear": "Limpar",
+      "editing": "Editando medição:",
+      "measurements": {
+        "title": "Perímetros (cm)",
+        "desc": "Registre o que medir hoje.",
+        "torso": "Tronco",
+        "arms": "Braços",
+        "legs": "Pernas",
+        "neck": "Pescoço",
+        "shoulders": "Ombros",
+        "chest": "Peito",
+        "underChest": "Sob o peito",
+        "waist": "Cintura",
+        "abdomen": "Abdômen (umbigo)",
+        "hips": "Quadril",
+        "armRelaxedLeft": "Braço relax. Esq",
+        "armRelaxedRight": "Braço relax. Dir",
+        "armFlexedLeft": "Braço flex. Esq",
+        "armFlexedRight": "Braço flex. Dir",
+        "forearmLeft": "Antebraço Esq",
+        "forearmRight": "Antebraço Dir",
+        "thighLeft": "Coxa Esq",
+        "thighRight": "Coxa Dir",
+        "calfLeft": "Panturrilha Esq",
+        "calfRight": "Panturrilha Dir"
+      },
+      "myMeasurements": {
+        "title": "Registro de hoje",
+        "desc": "Insira os dados disponíveis. Não é obrigatório preencher tudo.",
+        "detailsTitle": "Detalhes",
+        "notesOptional": "Notas (opcional)",
+        "notesPlaceholder": "Ex: me sinto bem, comecei nova dieta...",
+        "photosOptional": "Fotos (URLs, opcional)",
+        "photosPlaceholder": "https://... (uma por linha)",
+        "weightKg": "Peso (kg)",
+        "fatPct": "% Gordura corporal",
+        "waist": "Cintura (cm)",
+        "abdomen": "Abdômen / umbigo (cm)",
+        "hips": "Quadril (cm)",
+        "chest": "Peito (cm)"
+      },
+      "photos": {
+        "title": "Fotos",
+        "desc": "Fotos são essenciais para ver mudanças que o peso não mostra. Recomendado: frente / lateral / costas a cada 2–4 semanas.",
+        "noPhotos": "Nenhuma foto registrada ainda.",
+        "tip": "Dica: cole as URLs das suas fotos ao registrar uma medição."
+      },
+      "history": {
+        "title": "Histórico",
+        "clickToEdit": "Clique em uma linha para editar.",
+        "newMetric": "+ Nova medição",
+        "registerMetric": "+ Registrar medição",
+        "noMetrics": "Sem medições ainda.",
+        "date": "Data",
+        "weight": "Peso",
+        "fatPct": "% Gordura",
+        "waist": "Cintura",
+        "abdomen": "Abdômen",
+        "hips": "Quadril",
+        "actions": "Ações",
+        "tip": "Dica: meça a cada 1–2 semanas (perímetros) e fotos a cada 2–4 semanas."
+      },
+      "validation": {
+        "fatRange": "O % de gordura parece fora do intervalo (2–70).",
+        "weightRange": "O peso parece fora do intervalo (20–400 kg).",
+        "needsData": "Adicione pelo menos uma medida (ou nota/foto) antes de salvar.",
+        "saved": "Medição salva.",
+        "updated": "Medição atualizada.",
+        "deleteConfirm": "Excluir esta medição? Isso não pode ser desfeito.",
+        "deleteError": "Erro ao excluir"
+      }
+    }
+  },
+  "trainer": {
+    "dashboard": {
+      "greeting": "Olá",
+      "defaultName": "Treinador",
+      "subtitle": "Aqui está seu resumo de hoje",
+      "stats": {
+        "activeClients": "Clientes ativos",
+        "attendance": "Presença hoje",
+        "workoutsLogged": "Treinos registrados",
+        "avgAdherence": "Adesão média"
+      },
+      "recentActivity": "Atividade recente",
+      "noActivity": "Sem atividade recente",
+      "clientsWithoutPlan": "Clientes sem plano atualizado",
+      "viewAll": "Ver todos",
+      "allHavePlans": "Todos os clientes têm planos atribuídos",
+      "noGoal": "Sem objetivo definido",
+      "quickActions": "Ações rápidas",
+      "newClient": "Novo cliente",
+      "trainingPlan": "Plano de treino",
+      "nutritionPlan": "Plano nutricional",
+      "viewReports": "Ver relatórios",
+      "exercises": "exercícios concluídos",
+      "logTypes": {
+        "training": "Treino",
+        "meal": "Refeição",
+        "diary": "Diário"
+      }
+    },
+    "settings": {
+      "title": "Configurações",
+      "subtitle": "Gerencie seu perfil e preferências",
+      "profile": "Perfil",
+      "profileDesc": "Informações da sua conta",
+      "fullName": "Nome completo",
+      "email": "E-mail",
+      "phone": "Telefone",
+      "saving": "Salvando...",
+      "saveChanges": "Salvar alterações",
+      "savedSuccess": "Alterações salvas com sucesso",
+      "exerciseLibrary": "Biblioteca de exercícios",
+      "exerciseLibraryDesc": "Exercícios disponíveis para seus planos",
+      "trainingLibrary": "Biblioteca de planos de treino",
+      "trainingLibraryDesc": "Planos de treino criados"
+    }
+  },
+  "settings": {
+    "appearance": {
+      "title": "Aparência",
+      "subtitle": "Personalize sua experiência visual",
+      "language": {
+        "title": "Idioma",
+        "subtitle": "Selecione o idioma da interface",
+        "es": "Español",
+        "en": "English",
+        "pt": "Português"
+      },
+      "density": {
+        "title": "Densidade da interface",
+        "subtitle": "Controle o espaçamento e tamanho dos elementos",
+        "compact": "Compacto",
+        "normal": "Normal",
+        "comfortable": "Confortável",
+        "compact_desc": "Mais informações em menos espaço",
+        "normal_desc": "Equilíbrio entre conteúdo e espaçamento",
+        "comfortable_desc": "Maior espaçamento para melhor leitura"
+      },
+      "theme": {
+        "title": "Tema global",
+        "subtitle": "Cores base da aplicação",
+        "primary": "Cor principal",
+        "secondary": "Cor secundária",
+        "accent": "Destaque",
+        "danger": "Perigo / Erro",
+        "background": "Fundo",
+        "surface": "Superfície",
+        "textPrimary": "Texto principal",
+        "textMuted": "Texto secundário",
+        "border": "Bordas",
+        "reset_defaults": "Restaurar padrões",
+        "invalid_hex": "Cor hexadecimal inválida"
+      },
+      "views": {
+        "title": "Temas por vista",
+        "subtitle": "Personalize as cores de cada seção",
+        "customize_toggle": "Personalizar esta vista",
+        "active_overrides": "Sem personalizações | {n} vista personalizada | {n} vistas personalizadas",
+        "dashboard": "Dashboard",
+        "calendar": "Calendário",
+        "nutrition": "Nutrição",
+        "training": "Treino",
+        "metrics": "Métricas",
+        "tasks": "Tarefas"
+      },
+      "save": "Salvar configuração",
+      "reset_all": "Restaurar tudo",
+      "save_success": "Configuração salva com sucesso",
+      "save_error": "Erro ao salvar a configuração"
+    }
+  }
+}
