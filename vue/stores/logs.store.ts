@@ -318,8 +318,8 @@ export const useLogsStore = defineStore("logs", {
       const { id: realId, prs } = await upsertTrainingLogRepo(deterministicId, log);
 
       const merged: TrainingLog = {
-        id: realId,
         ...(log as any),
+        id: realId,
         date: d,
       };
 
@@ -343,6 +343,24 @@ export const useLogsStore = defineStore("logs", {
       );
 
       this.trainingLogsByWeekKey[wk] = next;
+
+      // Mantener sincronizado el cache global usado por TrainingView/calendar.
+      const allCurrent = Array.isArray(this.allLogsByClient[cid])
+        ? this.allLogsByClient[cid]
+        : [];
+      const allIdx = allCurrent.findIndex(
+        (x: any) => ymd(toJsDate(x.date)) === dStr,
+      );
+      const allNext =
+        allIdx >= 0
+          ? allCurrent.map((x: any, i: number) => (i === allIdx ? merged : x))
+          : [merged, ...allCurrent];
+
+      allNext.sort(
+        (a: any, b: any) =>
+          toJsDate(b.date).getTime() - toJsDate(a.date).getTime(),
+      );
+      this.allLogsByClient[cid] = allNext;
 
       return { log: merged, prs };
     },

@@ -49,10 +49,38 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
   return res.json() as Promise<T>
 }
 
+async function requestForm<T>(method: 'POST' | 'PUT' | 'PATCH', path: string, form: FormData): Promise<T> {
+  const token = getToken()
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers,
+    body: form,
+  })
+
+  if (res.status === 401) {
+    removeToken()
+    window.location.href = '/#/auth/login'
+    throw new Error('No autorizado — sesión expirada')
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.detail ?? `Error ${res.status}`)
+  }
+
+  if (res.status === 204) return undefined as T
+  return res.json() as Promise<T>
+}
+
 export const api = {
   get:    <T>(path: string)                   => request<T>('GET',    path),
   post:   <T>(path: string, body?: unknown)   => request<T>('POST',   path, body),
   put:    <T>(path: string, body?: unknown)   => request<T>('PUT',    path, body),
   patch:  <T>(path: string, body?: unknown)   => request<T>('PATCH',  path, body),
   delete: <T>(path: string)                   => request<T>('DELETE', path),
+  postForm: <T>(path: string, form: FormData) => requestForm<T>('POST', path, form),
+  putForm: <T>(path: string, form: FormData)  => requestForm<T>('PUT', path, form),
 }

@@ -61,6 +61,11 @@ export interface TrainingPlan {
   name: string
   description?: string
   weeks: TrainingWeek[]
+  isTemplate?: boolean
+  clientId?: string | null
+  sourceTemplateId?: string | null
+  assignedAt?: any
+  copiesCount?: number | null
   createdAt: Date
   updatedAt: Date
   startDate?: any
@@ -99,6 +104,24 @@ export interface TrainingLog {
   name?: string
   createdAt?: string
   trainerId: string
+}
+
+export interface ExerciseEvidence {
+  id: string
+  trainingLogId: string
+  exerciseId: string
+  exerciseName: string
+  clientId: string
+  trainerId: string
+  clientNote?: string | null
+  photoUrls: string[]
+  submittedAt: Date
+  trainerFeedback?: string | null
+  trainerRating?: 'correct' | 'improve' | null
+  trainerPhotoUrls: string[]
+  respondedAt?: Date | null
+  clientViewedAt?: Date | null
+  createdAt: Date
 }
 
 // Nutrition
@@ -143,6 +166,11 @@ export interface NutritionPlan {
   createdAt: Date
   updatedAt: Date
   guidelines?: Array<any>
+  isTemplate?: boolean
+  clientId?: string | null
+  sourceTemplateId?: string | null
+  assignedAt?: any
+  copiesCount?: number | null
 }
 
 export interface AssignedNutritionPlan {

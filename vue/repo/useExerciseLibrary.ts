@@ -21,8 +21,9 @@ function mapExercise(raw: any): Exercise {
   return {
     id: raw.id,
     name: raw.name,
-    muscleGroup: (raw.muscle_group ?? "Core") as MuscleGroup,
-    description: raw.description ?? undefined,
+    muscleGroup: (raw.muscle_group ?? raw.body_part ?? "Core") as MuscleGroup,
+    equipment: raw.equipment ?? undefined,
+    description: raw.description ?? raw.target ?? undefined,
     active: true,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
@@ -36,8 +37,8 @@ export function useExerciseLibrary(_coachId?: string) {
   async function start() {
     loading.value = true;
     try {
-      const data = await api.get<any[]>("/exercises");
-      library.value = data.map(mapExercise);
+      const data = await api.get<{ items: any[] }>("/exercises?limit=100&offset=0");
+      library.value = (data.items ?? []).map(mapExercise);
     } catch {
       library.value = [];
     } finally {

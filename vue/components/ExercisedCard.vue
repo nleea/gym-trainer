@@ -43,6 +43,24 @@
             </svg>
             <span>Última vez: <strong class="text-foreground/80">{{ lastPerf.reps }}×{{ lastPerf.weight }}kg</strong> · {{ daysAgo(lastPerf.date) }}</span>
           </p>
+
+          <div v-if="showEvidenceButton" class="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              class="rounded-lg border px-2.5 py-1 text-xs hover:bg-muted"
+              @click="$emit('evidence')"
+            >
+              📸 Subir evidencia
+            </button>
+            <span
+              v-if="evidenceStatus === 'responded'"
+              class="rounded-full bg-emerald-500/15 text-emerald-700 px-2 py-0.5 text-[11px]"
+            >Respondida</span>
+            <span
+              v-else-if="evidenceStatus === 'pending'"
+              class="rounded-full bg-amber-500/15 text-amber-700 px-2 py-0.5 text-[11px]"
+            >Pendiente</span>
+          </div>
         </div>
 
         <!-- Delete button -->
@@ -229,9 +247,11 @@ const props = defineProps<{
   index: number;
   disableName?: boolean;
   lastPerf?: { reps: number; weight: number; date: string } | null;
+  showEvidenceButton?: boolean;
+  evidenceStatus?: 'none' | 'pending' | 'responded';
 }>();
 
-const emit = defineEmits(['update:exercise', 'remove']);
+const emit = defineEmits(['update:exercise', 'remove', 'evidence']);
 
 const timer = useRestTimer()
 
@@ -284,7 +304,7 @@ function syncSetsToCount(count: number) {
     const last = local.value.sets[cur - 1] ?? {
       reps: clamp(local.value.reps ?? 10, 0, 200),
       weight: clamp(local.value.weight ?? 0, 0, 500),
-      completed: true,
+      completed: false,
     };
     for (let i = cur; i < count; i++) local.value.sets.push({ ...last });
   } else if (cur > count) {
@@ -344,7 +364,7 @@ watch(
 function updateSet(i: number, patch: any) {
   if (!Array.isArray(local.value.sets)) local.value.sets = [];
 
-  const s = local.value.sets[i] ?? { reps: 10, weight: 0, completed: true };
+  const s = local.value.sets[i] ?? { reps: 10, weight: 0, completed: false };
   local.value.sets[i] = {
     ...s,
     reps: patch.reps != null ? clamp(patch.reps, 0, 200) : s.reps,
@@ -354,7 +374,7 @@ function updateSet(i: number, patch: any) {
 
 function toggleCompleted(i: number, v: boolean) {
   if (!Array.isArray(local.value.sets)) local.value.sets = [];
-  const s = local.value.sets[i] ?? { reps: 10, weight: 0, completed: true };
+  const s = local.value.sets[i] ?? { reps: 10, weight: 0, completed: false };
   local.value.sets[i] = { ...s, completed: v };
   if (v) timer.start(local.value.rest ?? 60)
 }

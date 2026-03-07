@@ -22,6 +22,7 @@ import { toJsDate, isSameLocalDay } from '../../../lib/utils';
 import { getActiveWeekIndexFromAssignedAt } from '../../../lib/helpers';
 
 import TaskCalendar from '../../components/taskCalendar.vue';
+import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 
 import type { TrainingLog } from '../../types';
 
@@ -333,6 +334,14 @@ watch(
       :log="logForDate"
       :meals-for-date="nutritionPlan ? mealsForDate : undefined"
       @open-day="openPanel"
+    />
+
+    <!-- Training photos -->
+    <PhotoTimeline
+      v-if="clientId"
+      :client-id="clientId"
+      type="training"
+      :can-upload="true"
     />
   </div>
 

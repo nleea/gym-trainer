@@ -82,6 +82,14 @@ const plan = computed<NutritionPlan>({
   set(v) { emit('update:modelValue', v); },
 });
 
+const isTemplateEditing = computed(
+  () => Boolean((plan.value as any).isTemplate || (plan.value as any).is_template),
+);
+const sourceTemplateLabel = computed(() => {
+  const source = (plan.value as any).sourceTemplateId || (plan.value as any).source_template_id;
+  return source ? String(source) : 'Sin origen';
+});
+
 const ingredientText = ref('');
 const guidelinesText = ref('');
 
@@ -332,7 +340,7 @@ function totalCalories(day: NutritionDay) {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
         </svg>
-        {{ saving ? 'Guardando…' : 'Guardar' }}
+        {{ saving ? 'Guardando…' : (isTemplateEditing ? 'Guardar plantilla' : 'Guardar cambios') }}
       </button>
     </div>
 
@@ -340,6 +348,18 @@ function totalCalories(day: NutritionDay) {
          BODY
          ══════════════════════════════════════════ -->
     <div class="flex-1 space-y-5 p-4 lg:p-6">
+      <div
+        v-if="isTemplateEditing"
+        class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        ⚠️ Estás editando una plantilla global. Los cambios aplicarán a futuras asignaciones. Los clientes que ya tienen esta plantilla NO se ven afectados.
+      </div>
+      <div
+        v-else-if="plan.id"
+        class="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+      >
+        <strong class="text-foreground">Plan personalizado</strong> · origen: {{ sourceTemplateLabel }}
+      </div>
 
       <!-- ── Info card ── -->
       <div class="rounded-2xl border bg-card p-5 shadow-sm space-y-4">

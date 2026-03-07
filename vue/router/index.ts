@@ -22,6 +22,7 @@ import CreateNutritionPlanView from '../views/trainer/CreateNutritionPlanView.vu
 import NutritionPlanEditor from '../views/trainer/NutritionPlanEditor.vue'
 import ReportsView from '../views/trainer/ReportsView.vue'
 import TrainerSettingsView from '../views/trainer/SettingsView.vue'
+import TemplatesManagementView from '../views/trainer/TemplatesManagementView.vue'
 
 // Client Views
 import ClientDashboard from '../views/client/DashboardView.vue'
@@ -33,6 +34,7 @@ import ClientSettingsView from '../views/client/SettingsView.vue'
 import AppearanceSettings from '../views/settings/AppearanceSettings.vue'
 import MetrictsView from '../views/client/metrictsView.vue'
 import WeeklyCheckinView from '../views/client/WeeklyCheckinView.vue'
+import ExerciseLibraryView from '../views/shared/ExerciseLibraryView.vue'
 
 
 type Role = 'trainer' | 'client'
@@ -70,6 +72,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'plans/training/new', name: 'create-training-plan', component: CreateTrainingPlanView },
       { path: 'plans/training/:clientId/:id', name: 'edit-training-plan-client', component: CreateTrainingPlanView },
       { path: 'plans/training/:id', name: 'edit-training-plan', component: TrainingTemplatePage },
+      { path: 'plans/templates', name: 'templates-management', component: TemplatesManagementView },
       { path: 'plans/nutrition/new', name: 'create-nutrition-plan', component: NutritionPlanEditor },
       { path: 'plans/nutrition/:id/edit', name: 'edit-nutrition-plan', component: NutritionPlanEditor },
       { path: 'plans/nutrition/:clientId/:id', name: 'edit-nutrition-plan-client', component: CreateNutritionPlanView },
@@ -77,6 +80,12 @@ const routes: RouteRecordRaw[] = [
       { path: 'settings', name: 'trainer-settings', component: TrainerSettingsView },
       { path: 'settings/appearance', name: 'trainer-appearance', component: AppearanceSettings }
     ]
+  },
+  {
+    path: '/exercises',
+    name: 'exercise-library',
+    component: ExerciseLibraryView,
+    meta: { requiresAuth: true },
   },
   {
     path: '/client',

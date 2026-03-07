@@ -236,19 +236,21 @@ export const useDataStore = defineStore("data", {
       }
     },
 
-    addTrainingPlan(plan: Omit<TrainingPlan, "id" | "createdAt" | "updatedAt">) {
+    async addTrainingPlan(plan: Omit<TrainingPlan, "id" | "createdAt" | "updatedAt">) {
       const newPlan: TrainingPlan = {
         ...plan,
         createdAt: new Date(),
         updatedAt: new Date(),
+        isTemplate: true,
       }
 
-      createTrainingPlan("", newPlan)
+      const id = await createTrainingPlan("", newPlan)
+      newPlan.id = id
       this.trainingPlans.push(newPlan)
       return newPlan
     },
 
-    updateTrainingPlan(id: string, updates: Partial<TrainingPlan>) {
+    async updateTrainingPlan(id: string, updates: Partial<TrainingPlan>) {
       const index = this.trainingPlans.findIndex(p => p.id === id)
       if (index !== -1) {
         this.trainingPlans[index] = {
@@ -257,9 +259,9 @@ export const useDataStore = defineStore("data", {
           updatedAt: new Date()
         }
       }
-      updateTrainingPlan(id, updates)
+      await updateTrainingPlan(id, updates)
     },
-    updateNutritionPlan(id: string, updates: Partial<NutritionPlan>) {
+    async updateNutritionPlan(id: string, updates: Partial<NutritionPlan>) {
       const index = this.nutritionPlans.findIndex(p => p.id === id)
       if (index !== -1) {
         this.nutritionPlans[index] = {
@@ -268,7 +270,7 @@ export const useDataStore = defineStore("data", {
           updatedAt: new Date()
         }
       }
-      updateNutritionPlan(id, updates)
+      await updateNutritionPlan(id, updates)
     },
 
     async assignTrainingPlan(planId: string, clientId: string, startDate: Date, endDate: Date) {
@@ -346,9 +348,11 @@ export const useDataStore = defineStore("data", {
         days: plan.days || [],
         createdAt: new Date(),
         updatedAt: new Date(),
+        isTemplate: true,
       }
 
-      await createNutritionPlan("", newPlan)
+      const id = await createNutritionPlan("", newPlan)
+      newPlan.id = id
       this.nutritionPlans.push(newPlan)
       return newPlan
     },

@@ -6,6 +6,8 @@ import type { BodyMetricsEntry } from '@/types';
 import { toJsDate } from '../../../lib/utils';
 import { useAuthStore } from '../../stores/auth';
 import { useI18n } from 'vue-i18n';
+import { uploadMetricPhotoToR2 } from '../../repo/metricsrepo';
+import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 
 const { t } = useI18n();
 
@@ -24,8 +26,10 @@ const formMode = ref<'create' | 'edit'>('create');
 const editingId = ref<string | null>(null);
 
 const saving = ref(false);
+const uploadingPhotos = ref(false);
 const formError = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
+const uploadMsg = ref<string | null>(null);
 
 const form = reactive({
   date: new Date(),
@@ -79,6 +83,43 @@ function normalizePhotos(csv: string): string[] | null {
     .map((s) => s.trim())
     .filter(Boolean);
   return items.length ? items : null;
+}
+
+const currentPhotoUrls = computed(() => normalizePhotos(form.photosCsv) ?? []);
+
+function setPhotoUrls(urls: string[]) {
+  form.photosCsv = urls.join('\n');
+}
+
+function removePhoto(index: number) {
+  const next = [...currentPhotoUrls.value];
+  next.splice(index, 1);
+  setPhotoUrls(next);
+}
+
+async function onPhotoFilesSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input?.files ? Array.from(input.files) : [];
+  if (!files.length) return;
+
+  uploadMsg.value = null;
+  formError.value = null;
+  uploadingPhotos.value = true;
+
+  try {
+    const next = [...currentPhotoUrls.value];
+    for (const file of files) {
+      const url = await uploadMetricPhotoToR2(file);
+      next.push(url);
+    }
+    setPhotoUrls(next);
+    uploadMsg.value = `${files.length} foto(s) subida(s) correctamente`;
+  } catch (e: any) {
+    formError.value = e?.message ?? 'No se pudieron subir las imágenes';
+  } finally {
+    uploadingPhotos.value = false;
+    input.value = '';
+  }
 }
 
 function resetForm() {
@@ -361,7 +402,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
+  <div class="space-y-5 rounded-3xl border border-border/70 bg-gradient-to-b from-card to-card/70 p-4 shadow-sm sm:p-6">
     <!-- Header + tabs -->
     <div
       class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
@@ -394,16 +435,16 @@ onMounted(load);
 
       <!-- Tabs para CLIENTE -->
       <div v-else class="flex gap-2 overflow-x-auto pb-1 whitespace-nowrap">
-        <button class="px-3 py-1.5 rounded-lg border" :class="activeTab === 'overview' ? 'font-semibold' : ''" @click="activeTab = 'overview'">
+        <button class="px-3 py-1.5 rounded-xl border border-border/70" :class="activeTab === 'overview' ? 'font-semibold bg-primary/10 text-primary' : ''" @click="activeTab = 'overview'">
           {{ t('client.metrics.tabs.overview') }}
         </button>
-        <button class="px-3 py-1.5 rounded-lg border" :class="activeTab === 'mymeasurements' ? 'font-semibold' : ''" @click="activeTab = 'mymeasurements'">
+        <button class="px-3 py-1.5 rounded-xl border border-border/70" :class="activeTab === 'mymeasurements' ? 'font-semibold bg-primary/10 text-primary' : ''" @click="activeTab = 'mymeasurements'">
           {{ t('client.metrics.tabs.myMeasurements') }}
         </button>
-        <button class="px-3 py-1.5 rounded-lg border" :class="activeTab === 'photos' ? 'font-semibold' : ''" @click="activeTab = 'photos'">
+        <button class="px-3 py-1.5 rounded-xl border border-border/70" :class="activeTab === 'photos' ? 'font-semibold bg-primary/10 text-primary' : ''" @click="activeTab = 'photos'">
           {{ t('client.metrics.tabs.photos') }}
         </button>
-        <button class="px-3 py-1.5 rounded-lg border" :class="activeTab === 'history' ? 'font-semibold' : ''" @click="activeTab = 'history'">
+        <button class="px-3 py-1.5 rounded-xl border border-border/70" :class="activeTab === 'history' ? 'font-semibold bg-primary/10 text-primary' : ''" @click="activeTab = 'history'">
           {{ t('client.metrics.tabs.history') }}
         </button>
       </div>
@@ -419,10 +460,10 @@ onMounted(load);
 
     <!-- ==================== RESUMEN ==================== -->
     <div v-if="activeTab === 'overview'" class="space-y-3">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+      <div class="metrics-masonry">
 
         <!-- Peso -->
-        <div class="p-4 rounded-xl border space-y-1">
+        <div class="metrics-tile p-4 rounded-2xl border border-border/70 bg-background/50 space-y-1">
           <div class="text-sm opacity-70">{{ t('client.metrics.stats.weight') }}</div>
           <div class="text-2xl font-semibold">
             {{ fmt(weightDelta?.lastValue, ' kg') }}
@@ -441,7 +482,7 @@ onMounted(load);
         </div>
 
         <!-- % Grasa -->
-        <div class="p-4 rounded-xl border space-y-1">
+        <div class="metrics-tile p-4 rounded-2xl border border-border/70 bg-background/50 space-y-1">
           <div class="text-sm opacity-70">{{ t('client.metrics.stats.fatPct') }}</div>
           <div class="text-2xl font-semibold">
             {{ fmt(fatDelta?.lastValue, ' %') }}
@@ -458,7 +499,7 @@ onMounted(load);
         </div>
 
         <!-- Cintura -->
-        <div class="p-4 rounded-xl border space-y-1">
+        <div class="metrics-tile p-4 rounded-2xl border border-border/70 bg-background/50 space-y-1">
           <div class="text-sm opacity-70">{{ t('client.metrics.stats.waist') }}</div>
           <div class="text-2xl font-semibold">
             {{ fmt(waistDelta?.lastValue, ' cm') }}
@@ -475,7 +516,7 @@ onMounted(load);
         </div>
 
         <!-- Abdomen -->
-        <div class="p-4 rounded-xl border space-y-1">
+        <div class="metrics-tile p-4 rounded-2xl border border-border/70 bg-background/50 space-y-1">
           <div class="text-sm opacity-70">{{ t('client.metrics.stats.abdomen') }}</div>
           <div class="text-2xl font-semibold">
             {{ fmt(abdomenDelta?.lastValue, ' cm') }}
@@ -492,20 +533,20 @@ onMounted(load);
         </div>
       </div>
 
-      <div class="p-4 rounded-xl border">
+      <div class="p-4 rounded-2xl border border-border/70 bg-background/50">
         <div class="font-semibold mb-2">{{ t('client.metrics.latestPhotos') }}</div>
         <div v-if="!latestPhotos.length" class="text-sm opacity-70">
           {{ t('client.metrics.noPhotos') }}
         </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div v-else class="metrics-photo-masonry">
           <a
             v-for="(url, i) in latestPhotos"
             :key="url + i"
             :href="url"
             target="_blank"
-            class="block rounded-lg border overflow-hidden"
+            class="metrics-tile block rounded-xl border border-border/60 overflow-hidden"
           >
-            <img :src="url" class="w-full h-32 object-cover" />
+            <img :src="url" class="w-full object-cover" />
           </a>
         </div>
         <div class="text-xs opacity-60 mt-2">
@@ -517,7 +558,7 @@ onMounted(load);
     <!-- ==================== COMPOSICIÓN (solo trainer) ==================== -->
     <div
       v-if="activeTab === 'composition' && !isClient"
-      class="grid grid-cols-1 lg:grid-cols-2 gap-3"
+      class="metrics-masonry"
     >
       <div class="p-4 rounded-xl border space-y-2">
         <div class="font-semibold">{{ t('client.metrics.composition.title') }}</div>
@@ -673,7 +714,7 @@ onMounted(load);
       class="grid grid-cols-1 lg:grid-cols-2 gap-3"
     >
       <!-- Campos clave -->
-      <div class="p-4 rounded-xl border space-y-3">
+      <div class="metrics-tile p-4 rounded-2xl border border-border/70 bg-background/50 space-y-3">
         <div class="font-semibold">{{ t('client.metrics.myMeasurements.title') }}</div>
         <div class="text-sm opacity-70">
           {{ t('client.metrics.myMeasurements.desc') }}
@@ -714,7 +755,7 @@ onMounted(load);
       </div>
 
       <!-- Extras + guardar -->
-      <div class="p-4 rounded-xl border space-y-3">
+      <div class="metrics-tile p-4 rounded-2xl border border-border/70 bg-background/50 space-y-3">
         <div class="font-semibold">{{ t('client.metrics.myMeasurements.detailsTitle') }}</div>
 
         <label class="text-sm block">
@@ -738,6 +779,38 @@ onMounted(load);
           <textarea v-model="form.photosCsv" rows="2" class="mt-1 w-full border rounded-lg px-3 py-2 bg-background text-foreground"
             :placeholder="t('client.metrics.myMeasurements.photosPlaceholder')" />
         </label>
+        <div class="rounded-xl border border-dashed border-border p-3">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Subir fotos a Cloudflare R2
+          </p>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            class="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:font-semibold file:text-primary"
+            :disabled="uploadingPhotos"
+            @change="onPhotoFilesSelected"
+          />
+          <p v-if="uploadingPhotos" class="mt-2 text-xs text-muted-foreground">Subiendo imágenes...</p>
+          <p v-else-if="uploadMsg" class="mt-2 text-xs text-success">{{ uploadMsg }}</p>
+        </div>
+
+        <div v-if="currentPhotoUrls.length" class="metrics-photo-masonry mt-2">
+          <div
+            v-for="(url, i) in currentPhotoUrls"
+            :key="url + i"
+            class="metrics-tile relative overflow-hidden rounded-xl border border-border/60"
+          >
+            <img :src="url" class="w-full object-cover" />
+            <button
+              type="button"
+              class="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white"
+              @click="removePhoto(i)"
+            >
+              ×
+            </button>
+          </div>
+        </div>
 
         <div v-if="formError" class="rounded-lg bg-destructive/10 p-2 text-sm text-destructive">{{ formError }}</div>
         <div v-if="successMsg" class="rounded-lg bg-success/10 p-2 text-sm text-success">{{ successMsg }}</div>
@@ -758,34 +831,16 @@ onMounted(load);
     </div>
 
     <!-- ==================== FOTOS ==================== -->
-    <div v-if="activeTab === 'photos'" class="p-4 rounded-xl border space-y-3">
-      <div class="font-semibold">{{ t('client.metrics.photos.title') }}</div>
-      <div class="text-sm opacity-70">
-        {{ t('client.metrics.photos.desc') }}
-      </div>
-
-      <div v-if="!latestPhotos.length" class="text-sm opacity-70">
-        {{ t('client.metrics.photos.noPhotos') }}
-      </div>
-      <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <a
-          v-for="(url, i) in latestPhotos"
-          :key="url + i"
-          :href="url"
-          target="_blank"
-          class="block rounded-lg border overflow-hidden"
-        >
-          <img :src="url" class="w-full h-40 object-cover" />
-        </a>
-      </div>
-
-      <div class="text-xs opacity-60">
-        {{ t('client.metrics.photos.tip') }}
-      </div>
+    <div v-if="activeTab === 'photos'" class="p-4 rounded-2xl border border-border/70 bg-background/50">
+      <PhotoTimeline
+        :client-id="props.clientId"
+        type="progress"
+        :can-upload="true"
+      />
     </div>
 
     <!-- ==================== HISTORIAL ==================== -->
-    <div v-if="activeTab === 'history'" class="p-4 rounded-xl border space-y-3">
+    <div v-if="activeTab === 'history'" class="p-4 rounded-2xl border border-border/70 bg-background/50 space-y-3">
       <div class="flex items-center justify-between gap-2">
         <div>
           <div class="font-semibold">{{ t('client.metrics.history.title') }}</div>
@@ -865,3 +920,35 @@ onMounted(load);
     </div>
   </div>
 </template>
+
+<style scoped>
+.metrics-masonry {
+  column-count: 1;
+  column-gap: 0.9rem;
+}
+
+.metrics-photo-masonry {
+  column-count: 2;
+  column-gap: 0.6rem;
+}
+
+.metrics-tile {
+  break-inside: avoid;
+  margin-bottom: 0.9rem;
+}
+
+@media (min-width: 768px) {
+  .metrics-masonry {
+    column-count: 2;
+  }
+  .metrics-photo-masonry {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 1200px) {
+  .metrics-masonry {
+    column-count: 3;
+  }
+}
+</style>

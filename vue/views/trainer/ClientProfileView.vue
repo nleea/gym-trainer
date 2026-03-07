@@ -7,16 +7,20 @@ import { useDataStore } from '../../stores/data';
 import { useAuthStore } from '../../stores/auth';
 import { useLogsStore } from '../../stores/logs.store';
 import { useClientsStore } from '../../stores/clients.store';
+import { useEvidencesStore } from '../../stores/evidences.store';
 
 import { formatDate, toJsDate, weekKey } from '../../../lib/utils';
 
 import ProgressTab from '../../components/ProgressTab.vue';
 import AssignTrainingPlanModal from '../../components/AssignTrainingPlanModal.vue';
 import AssignNutritionPlanModal from '../../components/AssignNutritionPlanModal.vue';
+import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
+import ClientDiaryTab from './ClientDiaryTab.vue'
 
 const logsStore = useLogsStore();
 const authStore = useAuthStore();
 const clientStore = useClientsStore();
+const evidencesStore = useEvidencesStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -45,6 +49,7 @@ const todayWorkoutLogs = computed(() => {
 
 const showAssignModal = ref(false);
 const showAssignModalNutrition = ref(false);
+const loadingClient = ref(true);
 
 // -------- helpers UI --------
 
@@ -70,13 +75,14 @@ function calcWorkoutVolume(log: any) {
   );
 }
 
-const client = computed(() => dataStore.getClient(clientId.value));
+const client = computed(
+  () =>
+    clientStore.getClientCached(clientId.value) ??
+    dataStore.getClient(clientId.value) ??
+    null,
+);
 const attendance = computed(() =>
   dataStore.getClientAttendance(clientId.value).slice(0, 14),
-);
-
-const diaries = computed(() =>
-  dataStore.getClientDiaries(clientId.value).slice(0, 7),
 );
 
 const attendanceRate = computed(() =>
@@ -100,20 +106,30 @@ const mealLogs = computed(() => {
 watch(
   () => clientId.value,
   async (id) => {
-    if (!id) return
+    if (!id) {
+      loadingClient.value = false;
+      return;
+    }
 
-    const client = await clientStore.fetchClient(id)
-    if (!client) return
+    loadingClient.value = true;
 
-    const fetches = [
-      logsStore.loadTrainingLogWeek(id),
-      logsStore.loadMealsLogWeek(id),
-      dataStore.loadAttendance(),
-      clientStore.fetchPlanTrining(id),
-      clientStore.fetchNutritionPlan(id),
-    ]
+    try {
+      const fetchedClient = await clientStore.fetchClient(id);
+      if (!fetchedClient) return;
 
-    await Promise.all(fetches)
+      const fetches = [
+        logsStore.loadTrainingLogWeek(id),
+        logsStore.loadMealsLogWeek(id),
+        dataStore.loadAttendance(),
+        clientStore.fetchPlanTrining(id),
+        clientStore.fetchNutritionPlan(id),
+        evidencesStore.loadPendingCount(id),
+      ];
+
+      await Promise.all(fetches);
+    } finally {
+      loadingClient.value = false;
+    }
   },
   { immediate: true },
 )
@@ -129,22 +145,29 @@ async function refreshAssignedPlans() {
 }
 
 const activeTab = ref<
-  'overview' | 'attendance' | 'training' | 'nutrition' | 'diary' | 'progress'
+  'overview' | 'attendance' | 'training' | 'nutrition' | 'diary' | 'progress' | 'photos'
 >('overview');
 
-const tabs = [
-  { key: 'overview', label: 'Resumen' },
-  { key: 'attendance', label: 'Asistencia' },
-  { key: 'training', label: 'Entrenos' },
-  { key: 'nutrition', label: 'Comidas' },
-  { key: 'diary', label: 'Diario' },
-  { key: 'progress', label: 'Progreso' },
-];
+const unansweredEvidences = computed(
+  () => evidencesStore.getPendingForClient(clientId.value).unanswered || 0,
+);
 
-const getMoodEmoji = (mood: number) => {
-  const moods = ['', 'Muy mal', 'Mal', 'Normal', 'Bien', 'Muy bien'];
-  return moods[mood] || '';
-};
+const tabs = computed(() => [
+  { key: 'overview',    label: 'Resumen' },
+  { key: 'attendance',  label: 'Asistencia' },
+  { key: 'training',    label: 'Entrenos' },
+  { key: 'nutrition',   label: 'Comidas' },
+  { key: 'diary',       label: unansweredEvidences.value > 0 ? `Diario 📋 (${unansweredEvidences.value})` : 'Diario 📋' },
+  { key: 'progress',    label: 'Progreso' },
+  { key: 'photos',      label: 'Fotos' },
+]);
+
+const activePhotoType = ref<'progress' | 'nutrition' | 'training'>('progress')
+const photoTypeTabs = [
+  { key: 'progress',  label: 'Progreso' },
+  { key: 'nutrition', label: 'Nutrición' },
+  { key: 'training',  label: 'Entrenamientos' },
+] as const
 
 const toggleStatus = () => {
   if (client.value) {
@@ -156,7 +179,11 @@ const toggleStatus = () => {
 </script>
 
 <template>
-  <div v-if="client" class="space-y-6">
+  <div v-if="loadingClient" class="text-center py-12">
+    <p class="text-muted-foreground">Cargando cliente...</p>
+  </div>
+
+  <div v-else-if="client" class="space-y-6">
     <!-- Header -->
     <div class="flex items-start gap-4">
       <button
@@ -849,63 +876,38 @@ const toggleStatus = () => {
         </div>
       </div>
 
-      <!-- Diary Tab -->
-      <div
-        v-if="activeTab === 'diary'"
-        class="bg-card rounded-xl border border-border"
-      >
-        <div class="p-4 border-b border-border">
-          <h3 class="font-semibold text-foreground">Diario del cliente</h3>
-        </div>
-        <div class="divide-y divide-border">
-          <div v-for="diary in diaries" :key="diary.id" class="p-4">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-medium text-foreground">{{
-                formatDate(diary.date)
-              }}</span>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-              <div class="text-center p-2 bg-muted/50 rounded-lg">
-                <p class="text-xs text-muted-foreground">Ánimo</p>
-                <p class="text-sm font-medium text-foreground">
-                  {{ getMoodEmoji(diary.mood) }}
-                </p>
-              </div>
-              <div class="text-center p-2 bg-muted/50 rounded-lg">
-                <p class="text-xs text-muted-foreground">Energía</p>
-                <p class="text-sm font-medium text-foreground">
-                  {{ diary.energy }}/5
-                </p>
-              </div>
-              <div class="text-center p-2 bg-muted/50 rounded-lg">
-                <p class="text-xs text-muted-foreground">Sueño</p>
-                <p class="text-sm font-medium text-foreground">
-                  {{ diary.sleep.toFixed(1) }}h
-                </p>
-              </div>
-              <div class="text-center p-2 bg-muted/50 rounded-lg">
-                <p class="text-xs text-muted-foreground">Estrés</p>
-                <p class="text-sm font-medium text-foreground">
-                  {{ diary.stress }}/5
-                </p>
-              </div>
-            </div>
-            <p v-if="diary.notes" class="text-sm text-muted-foreground">
-              {{ diary.notes }}
-            </p>
-          </div>
-          <div
-            v-if="diaries.length === 0"
-            class="p-6 text-center text-muted-foreground"
-          >
-            No hay entradas en el diario
-          </div>
-        </div>
+      <div v-if="activeTab === 'diary'" class="space-y-6">
+        <ClientDiaryTab :client-id="clientId" />
       </div>
 
       <!-- Progress Tab -->
       <div v-if="activeTab === 'progress'" class="space-y-6">
         <ProgressTab :client-id="clientId" />
+      </div>
+
+      <!-- Photos Tab -->
+      <div v-if="activeTab === 'photos'" class="space-y-5">
+        <!-- Sub-tabs -->
+        <div class="flex gap-2 border-b pb-1">
+          <button
+            v-for="pt in photoTypeTabs"
+            :key="pt.key"
+            type="button"
+            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="activePhotoType === pt.key
+              ? 'bg-primary/10 text-primary'
+              : 'text-muted-foreground hover:text-foreground'"
+            @click="activePhotoType = pt.key"
+          >
+            {{ pt.label }}
+          </button>
+        </div>
+        <PhotoTimeline
+          :key="activePhotoType"
+          :client-id="clientId"
+          :type="activePhotoType"
+          :can-upload="true"
+        />
       </div>
     </div>
   </div>

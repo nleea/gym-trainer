@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../../stores/auth';
 import type { TrainingLog } from '../../types';
@@ -14,9 +14,15 @@ import { useLogsStore } from '../../stores/logs.store';
 import { useClientsStore } from '../../stores/clients.store';
 
 import ExercisedCard from '../../components/ExercisedCard.vue';
+import ExerciseSearchDrawer from '../../components/ExerciseSearchDrawer.vue';
 import PRCelebrationModal from '../../components/PRCelebrationModal.vue';
+import EvidenceModal from '../../components/EvidenceModal.vue';
+import EvidenceThreadCard from '../../components/EvidenceThreadCard.vue';
 import type { PRItem } from '../../components/PRCelebrationModal.vue';
 import { getLastPerformance } from '../../repo/trainingLogsrepo';
+import type { ExerciseItem } from '../../repo/exercisesRepo';
+import { useEvidencesStore } from '../../stores/evidences.store';
+import { useAppToast } from '@/composables/useAppToast';
 
 import {
   parseYmdLocal,
@@ -33,6 +39,8 @@ const authStore = useAuthStore();
 const logs = useLogsStore();
 const planStore = usePlansStore();
 const clientStore = useClientsStore();
+const evidencesStore = useEvidencesStore();
+const toast = useAppToast();
 
 
 
@@ -54,6 +62,7 @@ const workoutEffort = ref<number>(6);
 
 const plannedExercises = ref<UiExercise[]>([]);
 const extraExercises = ref<UiExercise[]>([]);
+const showExerciseDrawer = ref(false);
 
 const saving = ref(false);
 const formError = ref('');
@@ -63,6 +72,25 @@ const lastPerformance = ref<
 >({});
 const showPRModal = ref(false);
 const currentPRs = ref<PRItem[]>([]);
+const showTrainingModeModal = ref(false);
+const restoredFromDraft = ref(false);
+const draftHydratedKey = ref('');
+const suppressLeaveGuard = ref(false);
+const showEvidenceModal = ref(false);
+const selectedEvidence = ref<{ exerciseId: string; exerciseName: string } | null>(null);
+const logViewMode = ref<'register' | 'evidences'>('register');
+const loadingEvidencesList = ref(false);
+
+type WorkoutDraft = {
+  workoutName: string;
+  workoutDuration: number;
+  notes: string;
+  workoutEffort: number;
+  plannedExercises: any[];
+  extraExercises: any[];
+  sessionStart: number;
+  savedAt: number;
+};
 
 const weekDaysUi = [
   'domingo',
@@ -85,6 +113,21 @@ onMounted(() => {
 });
 
 onUnmounted(() => clearInterval(t));
+
+// ── Display-only: session elapsed timer ────────────────────────────────────
+const sessionStart = ref(Date.now());
+const sessionTick = ref(Date.now());
+let sessionIntervalId: any;
+onMounted(() => {
+  sessionIntervalId = setInterval(() => {
+    sessionTick.value = Date.now();
+  }, 1000);
+});
+onUnmounted(() => clearInterval(sessionIntervalId));
+const sessionElapsed = computed(() => {
+  const secs = Math.floor((sessionTick.value - sessionStart.value) / 1000);
+  return `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
+});
 
 /** ---------- day key from SELECTED date (important) ---------- */
 const dayKeyForSelectedDate = computed(() => {
@@ -128,7 +171,7 @@ function normalizeSets(ex: any, desiredCount: number) {
 
   const cur = ex.sets.length;
   if (cur < count) {
-    const last = ex.sets[cur - 1] ?? { reps: 10, weight: 0, completed: true };
+    const last = ex.sets[cur - 1] ?? { reps: 10, weight: 0, completed: false };
     for (let i = cur; i < count; i++) ex.sets.push({ ...last });
   } else if (cur > count) {
     ex.sets.splice(count);
@@ -158,11 +201,17 @@ const todayLog = computed(() => {
   );
 });
 
+const currentTrainingLogId = computed(() => String((todayLog.value as any)?.id || ''));
+
 const isEditingExisting = computed(() => !!todayLog.value);
 const allExercises = computed(() => [
   ...plannedExercises.value,
   ...extraExercises.value,
 ]);
+const draftStorageKey = computed(() => {
+  if (!clientId.value) return '';
+  return `workout_draft_${clientId.value}_${workoutDate.value}`;
+});
 
 /** ---------- resolve plan week robustly ---------- */
 const activePlanWeek = computed(() => {
@@ -196,17 +245,22 @@ const todayPlanWorkout = computed(() => {
 
 /** ---------- UI actions ---------- */
 const addExtraExercise = () => {
+  showExerciseDrawer.value = true;
+};
+
+const addExtraExerciseFromLibrary = (exercise: ExerciseItem) => {
   extraExercises.value.push({
     source: 'extra',
     exerciseId: crypto.randomUUID(),
-    name: '',
+    planExerciseId: exercise.id,
+    name: exercise.name,
     rest: 60,
     notes: '',
     setsCount: 3,
     sets: [
-      { reps: 10, weight: 0, completed: true },
-      { reps: 10, weight: 0, completed: true },
-      { reps: 10, weight: 0, completed: true },
+      { reps: 10, weight: 0, completed: false },
+      { reps: 10, weight: 0, completed: false },
+      { reps: 10, weight: 0, completed: false },
     ],
   } as any);
 };
@@ -236,6 +290,127 @@ const isValidWorkout = computed(() => {
   );
 });
 
+const isDraftMode = computed(
+  () =>
+    !isEditingExisting.value &&
+    !!draftStorageKey.value &&
+    draftHydratedKey.value === draftStorageKey.value,
+);
+
+function serializeExercises(list: any[]) {
+  return JSON.parse(JSON.stringify(list ?? []));
+}
+
+function normalizeDraftExercise(ex: any, fallbackSource: 'plan' | 'extra') {
+  const setsRaw = Array.isArray(ex?.sets) ? ex.sets : [];
+  const row: any = {
+    source: ex?.source ?? fallbackSource,
+    planExerciseId: ex?.planExerciseId ?? ex?.exerciseId ?? crypto.randomUUID(),
+    exerciseId: ex?.exerciseId ?? ex?.planExerciseId ?? crypto.randomUUID(),
+    name: String(ex?.name ?? ''),
+    rest: clamp(ex?.rest ?? 60, 0, 600),
+    notes: String(ex?.notes ?? ''),
+    setsCount: clamp(ex?.setsCount ?? setsRaw.length ?? 3, 1, 20),
+    sets: setsRaw.map((s: any) => ({
+      reps: clamp(s?.reps ?? 10, 0, 200),
+      weight: clamp(s?.weight ?? 0, 0, 500),
+      completed: s?.completed ?? false,
+    })),
+  };
+  normalizeSets(row, row.setsCount);
+  return row;
+}
+
+function clearWorkoutDraft() {
+  if (typeof window === 'undefined' || !draftStorageKey.value) return;
+  localStorage.removeItem(draftStorageKey.value);
+}
+
+function saveWorkoutDraft() {
+  if (typeof window === 'undefined') return;
+  if (!isDraftMode.value || !draftStorageKey.value) return;
+
+  const payload: WorkoutDraft = {
+    workoutName: workoutName.value,
+    workoutDuration: Number(workoutDuration.value || 0),
+    notes: notes.value,
+    workoutEffort: Number(workoutEffort.value || 6),
+    plannedExercises: serializeExercises(plannedExercises.value),
+    extraExercises: serializeExercises(extraExercises.value),
+    sessionStart: sessionStart.value,
+    savedAt: Date.now(),
+  };
+  localStorage.setItem(draftStorageKey.value, JSON.stringify(payload));
+}
+
+function restoreWorkoutDraft() {
+  if (typeof window === 'undefined' || !draftStorageKey.value) return false;
+
+  const raw = localStorage.getItem(draftStorageKey.value);
+  if (!raw) return false;
+
+  try {
+    const parsed = JSON.parse(raw) as WorkoutDraft;
+
+    workoutName.value = String(parsed.workoutName ?? workoutName.value);
+    workoutDuration.value = clamp(parsed.workoutDuration ?? 0, 0, 600);
+    notes.value = String(parsed.notes ?? '');
+    workoutEffort.value = clamp(parsed.workoutEffort ?? 6, 1, 10);
+
+    plannedExercises.value = Array.isArray(parsed.plannedExercises)
+      ? parsed.plannedExercises.map((ex: any) =>
+          normalizeDraftExercise(ex, 'plan'),
+        )
+      : plannedExercises.value;
+    extraExercises.value = Array.isArray(parsed.extraExercises)
+      ? parsed.extraExercises.map((ex: any) =>
+          normalizeDraftExercise(ex, 'extra'),
+        )
+      : extraExercises.value;
+
+    if (
+      Number.isFinite(parsed.sessionStart) &&
+      Number(parsed.sessionStart) > 0
+    ) {
+      sessionStart.value = Number(parsed.sessionStart);
+    }
+    sessionTick.value = Date.now();
+
+    return true;
+  } catch {
+    localStorage.removeItem(draftStorageKey.value);
+    return false;
+  }
+}
+
+function initializeDraftMode() {
+  if (!draftStorageKey.value || isEditingExisting.value) return;
+  if (draftHydratedKey.value === draftStorageKey.value) return;
+
+  const recovered = restoreWorkoutDraft();
+  restoredFromDraft.value = recovered;
+  showTrainingModeModal.value = !recovered;
+  draftHydratedKey.value = draftStorageKey.value;
+}
+
+function enterTrainingMode() {
+  showTrainingModeModal.value = false;
+  if (!restoredFromDraft.value) {
+    sessionStart.value = Date.now();
+    sessionTick.value = Date.now();
+  }
+}
+
+function exitFromTrainingModeModal() {
+  suppressLeaveGuard.value = true;
+  clearWorkoutDraft();
+  router.push('/client');
+}
+
+function shouldWarnLeave() {
+  return isDraftMode.value && !showTrainingModeModal.value;
+}
+
 /** ---------- merge: plan + log ---------- */
 watch(
   [todayPlanWorkout, todayLog],
@@ -264,7 +439,7 @@ watch(
         sets: Array.from({ length: setsCount }, () => ({
           reps,
           weight,
-          completed: true,
+          completed: false,
         })),
       };
 
@@ -279,8 +454,15 @@ watch(
 
       if (!workoutName.value)
         workoutName.value = `Entrenamiento ${planWorkout.day}`;
+
+      initializeDraftMode();
       return;
     }
+
+    showTrainingModeModal.value = false;
+    restoredFromDraft.value = false;
+    draftHydratedKey.value = '';
+    clearWorkoutDraft();
 
     // con log: campos base
     workoutName.value = String(
@@ -309,7 +491,7 @@ watch(
         merged.sets = savedSets.map((s: any) => ({
           reps: clamp(s.reps, 0, 200),
           weight: clamp(s.weight, 0, 500),
-          completed: s.completed ?? true,
+          completed: s.completed ?? false,
         }));
         merged.setsCount = merged.sets.length;
         normalizeSets(merged, merged.setsCount);
@@ -337,12 +519,12 @@ watch(
             : Array.from({ length: 3 }, () => ({
                 reps: 10,
                 weight: 0,
-                completed: true,
+                completed: false,
               }))
           ).map((s: any) => ({
             reps: clamp(s.reps ?? 10, 0, 200),
             weight: clamp(s.weight ?? 0, 0, 500),
-            completed: s.completed ?? true,
+            completed: s.completed ?? false,
           })),
         };
         normalizeSets(row, row.setsCount);
@@ -381,6 +563,77 @@ watch(
   },
   { immediate: true },
 );
+
+watch(
+  [workoutName, workoutDuration, notes, workoutEffort, plannedExercises, extraExercises],
+  () => {
+    saveWorkoutDraft();
+  },
+  { deep: true },
+);
+
+watch(
+  currentTrainingLogId,
+  async (logId) => {
+    if (!logId) return;
+    await evidencesStore.loadEvidencesByLog(logId, true);
+  },
+  { immediate: true },
+);
+
+const myEvidences = computed(() => {
+  const cid = clientId.value;
+  if (!cid) return [];
+  return [...evidencesStore.getClientEvidences(cid)].sort(
+    (a: any, b: any) =>
+      new Date(b.submittedAt as any).getTime() -
+      new Date(a.submittedAt as any).getTime(),
+  );
+});
+
+async function loadMyEvidences() {
+  const cid = clientId.value;
+  if (!cid) return;
+  loadingEvidencesList.value = true;
+  try {
+    await evidencesStore.loadClientEvidences(cid, 100, 0);
+    await evidencesStore.loadPendingCount(cid);
+  } finally {
+    loadingEvidencesList.value = false;
+  }
+}
+
+watch(
+  logViewMode,
+  async (mode) => {
+    if (mode !== 'evidences') return;
+    await loadMyEvidences();
+  },
+  { immediate: false },
+);
+
+function openEvidenceForExercise(ex: any) {
+  if (!currentTrainingLogId.value || !todayLog.value) {
+    toast.error('Primero guarda el entrenamiento para poder subir evidencia');
+    return;
+  }
+  selectedEvidence.value = {
+    exerciseId: String(ex.planExerciseId ?? ex.exerciseId),
+    exerciseName: String(ex.name ?? ex.exerciseName ?? 'Ejercicio'),
+  };
+  showEvidenceModal.value = true;
+}
+
+function evidenceStatusForExercise(ex: any): 'none' | 'pending' | 'responded' {
+  const logId = currentTrainingLogId.value;
+  if (!logId) return 'none';
+  const evidence = evidencesStore.getEvidenceByLogExercise(
+    logId,
+    String(ex.planExerciseId ?? ex.exerciseId),
+  );
+  if (!evidence) return 'none';
+  return evidence.respondedAt ? 'responded' : 'pending';
+}
 
 /** ---------- save (upsert) ---------- */
 const saveWorkout = async () => {
@@ -429,13 +682,14 @@ const saveWorkout = async () => {
           sets: (ex.sets ?? []).map((s: any) => ({
             reps: clamp(s.reps, 0, 200),
             weight: clamp(s.weight, 0, 500),
-            completed: s.completed ?? true,
+            completed: s.completed ?? false,
           })),
         };
       }),
     };
 
     const { prs } = await logs.upsertTrainingLog(payload);
+    clearWorkoutDraft();
 
     if (prs.length > 0) {
       currentPRs.value = prs;
@@ -452,20 +706,30 @@ const saveWorkout = async () => {
 
 const cancelWorkout = () => router.push('/client');
 
-// ── Display-only: session elapsed timer ────────────────────────────────────
-const sessionStart = ref(Date.now());
-const sessionTick = ref(Date.now());
-let sessionIntervalId: any;
-onMounted(() => {
-  sessionIntervalId = setInterval(() => {
-    sessionTick.value = Date.now();
-  }, 1000);
+onBeforeRouteLeave(() => {
+  if (suppressLeaveGuard.value) {
+    suppressLeaveGuard.value = false;
+    return true;
+  }
+  if (!shouldWarnLeave()) return true;
+
+  saveWorkoutDraft();
+  return window.confirm(
+    'Estás en modo entrenamiento. Si sales, se guardará tu progreso en borrador. ¿Quieres salir?',
+  );
 });
-onUnmounted(() => clearInterval(sessionIntervalId));
-const sessionElapsed = computed(() => {
-  const secs = Math.floor((sessionTick.value - sessionStart.value) / 1000);
-  return `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
-});
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (!shouldWarnLeave()) return;
+  saveWorkoutDraft();
+  event.preventDefault();
+  event.returnValue = '';
+};
+
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
+onUnmounted(() =>
+  window.removeEventListener('beforeunload', handleBeforeUnload),
+);
 
 // ── Display-only: real-time workout stats ──────────────────────────────────
 const totalVolume = computed(() =>
@@ -502,6 +766,40 @@ const progressPct = computed(() =>
 </script>
 
 <template>
+  <div
+    v-if="showTrainingModeModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+  >
+    <div class="w-full max-w-md rounded-2xl border bg-card p-5 shadow-xl">
+      <p class="text-xs font-bold uppercase tracking-widest text-primary">
+        Modo entrenamiento
+      </p>
+      <h2 class="mt-2 text-lg font-bold text-foreground">
+        Vas a entrar al registro de entrenamiento
+      </h2>
+      <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+        Para medir tu sesión completa, procura no salir de esta vista hasta terminar.
+        Si sales por cualquier razón, guardaremos un borrador automático y lo retomaremos al volver.
+      </p>
+      <div class="mt-5 flex gap-2">
+        <button
+          type="button"
+          class="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          @click="enterTrainingMode"
+        >
+          Entrar al modo entrenamiento
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          @click="exitFromTrainingModeModal"
+        >
+          Salir
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════════════════════════════════════════════
        STICKY HEADER — name · timer · volume · progress
        ══════════════════════════════════════════════════════ -->
@@ -634,6 +932,26 @@ const progressPct = computed(() =>
        MAIN CONTENT
        ══════════════════════════════════════════════════════ -->
   <div class="px-4 py-5 space-y-6">
+    <div class="inline-flex rounded-xl border border-border overflow-hidden bg-card">
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-medium transition-colors"
+        :class="logViewMode === 'register' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+        @click="logViewMode = 'register'"
+      >
+        Registrar
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-medium border-l border-border transition-colors"
+        :class="logViewMode === 'evidences' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+        @click="logViewMode = 'evidences'"
+      >
+        Evidencias
+      </button>
+    </div>
+
+    <template v-if="logViewMode === 'register'">
     <!-- Alerts -->
     <div
       v-if="isEditingExisting"
@@ -653,6 +971,12 @@ const progressPct = computed(() =>
         />
       </svg>
       Editando entrenamiento registrado para hoy.
+    </div>
+    <div
+      v-if="restoredFromDraft && !isEditingExisting"
+      class="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300"
+    >
+      Se recuperó tu borrador local para continuar donde ibas.
     </div>
     <div
       v-if="formError"
@@ -756,11 +1080,14 @@ const progressPct = computed(() =>
             v-model:exercise="plannedExercises[idx]"
             :index="idx"
             :disableName="true"
+            :show-evidence-button="true"
+            :evidence-status="evidenceStatusForExercise(exercise)"
             :last-perf="
               lastPerformance[exercise.planExerciseId ?? exercise.exerciseId] ??
               null
             "
             @remove="removePlanned(exercise.exerciseId)"
+            @evidence="openEvidenceForExercise(exercise)"
           />
         </div>
       </div>
@@ -804,11 +1131,14 @@ const progressPct = computed(() =>
           <ExercisedCard
             v-model:exercise="extraExercises[idx]"
             :index="idx"
+            :show-evidence-button="true"
+            :evidence-status="evidenceStatusForExercise(exercise)"
             :last-perf="
               lastPerformance[exercise.planExerciseId ?? exercise.exerciseId] ??
               null
             "
             @remove="removeExtra(exercise.exerciseId)"
+            @evidence="openEvidenceForExercise(exercise)"
           />
         </div>
       </div>
@@ -823,7 +1153,7 @@ const progressPct = computed(() =>
           class="text-3xl font-light leading-none group-hover:scale-110 transition-transform"
           >+</span
         >
-        <p class="text-sm font-medium">Agregar ejercicio extra</p>
+        <p class="text-sm font-medium">+ Añadir ejercicio extra</p>
       </button>
     </div>
 
@@ -850,11 +1180,57 @@ const progressPct = computed(() =>
         Cancelar
       </button>
     </div>
+    </template>
+
+    <template v-else>
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-muted-foreground">Historial de evidencias enviadas y respuestas del trainer.</p>
+        <button
+          type="button"
+          class="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+          @click="loadMyEvidences"
+          :disabled="loadingEvidencesList"
+        >
+          {{ loadingEvidencesList ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+      </div>
+
+      <div v-if="loadingEvidencesList" class="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+        Cargando evidencias...
+      </div>
+
+      <div v-else-if="myEvidences.length === 0" class="rounded-xl border border-dashed border-border bg-card p-6 text-sm text-muted-foreground">
+        Aún no has enviado evidencias.
+      </div>
+
+      <div v-else class="space-y-3">
+        <EvidenceThreadCard
+          v-for="ev in myEvidences"
+          :key="ev.id"
+          :evidence="ev"
+        />
+      </div>
+    </template>
   </div>
 
   <PRCelebrationModal
     v-if="showPRModal"
     :prs="currentPRs"
     @close="router.push('/client')"
+  />
+
+  <ExerciseSearchDrawer
+    v-model:open="showExerciseDrawer"
+    mode="log"
+    :on-select="addExtraExerciseFromLibrary"
+  />
+
+  <EvidenceModal
+    :open="showEvidenceModal"
+    :training-log-id="currentTrainingLogId"
+    :exercise-id="selectedEvidence?.exerciseId || ''"
+    :exercise-name="selectedEvidence?.exerciseName || ''"
+    @close="showEvidenceModal = false"
+    @submitted="currentTrainingLogId && evidencesStore.loadEvidencesByLog(currentTrainingLogId, true)"
   />
 </template>

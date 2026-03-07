@@ -6,6 +6,11 @@ import { toDate } from './fireRepo'
 function mapPlan(d: any): NutritionPlan {
   return {
     ...d,
+    isTemplate: d.is_template ?? d.isTemplate ?? false,
+    clientId: d.client_id ?? d.clientId ?? null,
+    sourceTemplateId: d.source_template_id ?? d.sourceTemplateId ?? null,
+    assignedAt: toDate(d.assigned_at ?? d.assignedAt),
+    copiesCount: d.copies_count ?? d.copiesCount ?? null,
     createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
     updatedAt: toDate(d.updatedAt ?? d.updated_at) ?? new Date(),
   } as NutritionPlan
@@ -29,7 +34,7 @@ export async function createNutritionPlan(_trainerId: string, data: NutritionPla
 }
 
 export async function listNutritionPlansByEntrenator(_trainerId?: string): Promise<NutritionPlan[]> {
-  const list = await api.get<any[]>('/nutrition-plans')
+  const list = await api.get<any[]>('/nutrition-plans/templates')
   return list.map(mapPlan)
 }
 
@@ -45,7 +50,8 @@ export async function getNutritionPlanById(id: string): Promise<NutritionPlan | 
 }
 
 export async function updateNutritionPlan(id: string, data: Partial<NutritionPlan>): Promise<void> {
-  await api.put(`/nutrition-plans/${id}`, {
+  const endpoint = data.isTemplate ? `/nutrition-plans/templates/${id}` : `/nutrition-plans/${id}`
+  await api.put(endpoint, {
     name: data.name,
     days: data.days,
     target_calories: data.targetCalories,
@@ -60,7 +66,7 @@ export async function updateNutritionPlan(id: string, data: Partial<NutritionPla
 }
 
 export async function deleteNutritionPlan(id: string): Promise<void> {
-  await api.delete(`/nutrition-plans/${id}`)
+  await api.delete(`/nutrition-plans/templates/${id}`)
 }
 
 export async function assignNutritionTemplateToClient(
@@ -70,10 +76,10 @@ export async function assignNutritionTemplateToClient(
   durationWeeks: number,
   _uid: string
 ): Promise<NutritionPlan | undefined> {
-  await api.post(`/nutrition-plans/${templatePlanId}/assign`, {
+  const plan = await api.post<any>(`/nutrition-plans/${templatePlanId}/assign`, {
     client_id: clientId,
     start_date: startDate,
     duration_weeks: durationWeeks,
   })
-  return getNutritionPlanById(templatePlanId) ?? undefined
+  return mapPlan(plan)
 }

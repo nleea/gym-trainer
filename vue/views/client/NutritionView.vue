@@ -156,6 +156,14 @@
         />
       </template>
     </template>
+
+    <!-- Nutrition photos -->
+    <PhotoTimeline
+      v-if="clientId"
+      :client-id="clientId"
+      type="nutrition"
+      :can-upload="true"
+    />
   </div>
 </template>
 
@@ -171,6 +179,7 @@ import MacroRingsCard from '../../components/MacroRingsCard.vue';
 import WaterTracker from '../../components/WaterTracker.vue';
 import MealCard from '../../components/MealCard.vue';
 import NutritionAdherenceChart from '../../components/NutritionAdherenceChart.vue';
+import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 
 const authStore = useAuthStore();
 const plansStore = usePlansStore();

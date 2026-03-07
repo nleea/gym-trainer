@@ -40,7 +40,7 @@
     <!-- History (full width) -->
     <WorkoutHistoryList :workout-history="workoutHistory" />
 
-    <!-- Metrics (full width) -->
+    <!-- Metrics (full width) — includes progress photos tab -->
     <ClientMetricsView :client-id="clientId" />
   </div>
 </template>

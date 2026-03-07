@@ -113,6 +113,13 @@ export interface MetricsSummary {
   history: BodyMetricsEntry[]
 }
 
+export interface MetricPhotoUploadUrl {
+  key: string
+  upload_url: string
+  public_url: string
+  expires_in: number
+}
+
 export async function getMetricsSummary(clientId: string): Promise<MetricsSummary> {
   const raw = await api.get<any>(`/clients/${clientId}/metrics-summary`)
   return {
@@ -120,6 +127,35 @@ export async function getMetricsSummary(clientId: string): Promise<MetricsSummar
     series: raw.series,
     history: (raw.history ?? []).map(fromResponse),
   }
+}
+
+export async function createMetricPhotoUploadUrl(
+  fileName: string,
+  contentType: string,
+  fileSize?: number,
+): Promise<MetricPhotoUploadUrl> {
+  return api.post<MetricPhotoUploadUrl>('/metrics/upload-url', {
+    file_name: fileName,
+    content_type: contentType,
+    file_size: fileSize ?? null,
+  })
+}
+
+export async function uploadMetricPhotoToR2(file: File): Promise<string> {
+  const signed = await createMetricPhotoUploadUrl(
+    file.name,
+    file.type || 'application/octet-stream',
+    file.size,
+  )
+
+  const res = await fetch(signed.upload_url, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  })
+  if (!res.ok) throw new Error('No se pudo subir la imagen a R2')
+
+  return signed.public_url
 }
 
 export async function addMetricsEntry(entry: Omit<BodyMetricsEntry, 'id'>): Promise<string> {

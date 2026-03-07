@@ -64,10 +64,7 @@ export async function deleteClient(clientId: string): Promise<void> {
 // Plan de entrenamiento activo del cliente
 export async function getClientPlantraining(clientId: string): Promise<TrainingPlan | null> {
   try {
-    const client = await api.get<any>(`/clients/${clientId}`)
-    const planId = client?.plan_id
-    if (!planId) return null
-    const plan = await api.get<any>(`/training-plans/${planId}`)
+    const plan = await api.get<any>(`/training-plans/client/${clientId}`)
     return mapTrainingPlan(plan)
   } catch {
     return null
@@ -77,10 +74,7 @@ export async function getClientPlantraining(clientId: string): Promise<TrainingP
 // Plan de nutrición activo del cliente
 export async function getClientNutritionPlan(clientId: string): Promise<NutritionPlan | null> {
   try {
-    const client = await api.get<any>(`/clients/${clientId}`)
-    const nutritionPlanId = client?.nutrition_plan_id
-    if (!nutritionPlanId) return null
-    const plan = await api.get<any>(`/nutrition-plans/${nutritionPlanId}`)
+    const plan = await api.get<any>(`/nutrition-plans/client/${clientId}`)
     return mapNutritionPlan(plan)
   } catch {
     return null

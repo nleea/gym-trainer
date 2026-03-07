@@ -6,8 +6,13 @@ import { toDate } from './fireRepo'
 function mapPlan(d: any): TrainingPlan {
   return {
     ...d,
-    createdAt: toDate(d.createdAt) ?? new Date(),
-    updatedAt: toDate(d.updatedAt) ?? new Date(),
+    isTemplate: d.is_template ?? d.isTemplate ?? false,
+    clientId: d.client_id ?? d.clientId ?? null,
+    sourceTemplateId: d.source_template_id ?? d.sourceTemplateId ?? null,
+    assignedAt: toDate(d.assigned_at ?? d.assignedAt),
+    copiesCount: d.copies_count ?? d.copiesCount ?? null,
+    createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
+    updatedAt: toDate(d.updatedAt ?? d.updated_at) ?? new Date(),
   } as TrainingPlan
 }
 
@@ -21,7 +26,7 @@ export async function createTrainingPlan(_trainerId: string, data: TrainingPlan)
 }
 
 export async function listTrainingPlansByEntrenator(_trainerId?: string): Promise<TrainingPlan[]> {
-  const list = await api.get<any[]>('/training-plans')
+  const list = await api.get<any[]>('/training-plans/templates')
   return list.map(mapPlan)
 }
 
@@ -37,11 +42,12 @@ export async function getTrainingPlanById(id: string): Promise<TrainingPlan | nu
 }
 
 export async function updateTrainingPlan(id: string, data: Partial<TrainingPlan>): Promise<void> {
-  await api.put(`/training-plans/${id}`, data)
+  const endpoint = data.isTemplate ? `/training-plans/templates/${id}` : `/training-plans/${id}`
+  await api.put(endpoint, data)
 }
 
 export async function deleteTrainingPlan(id: string): Promise<void> {
-  await api.delete(`/training-plans/${id}`)
+  await api.delete(`/training-plans/templates/${id}`)
 }
 
 export async function assignTemplateToClient(
@@ -51,10 +57,10 @@ export async function assignTemplateToClient(
   durationWeeks: number,
   _uid: string
 ): Promise<TrainingPlan | undefined> {
-  await api.post(`/training-plans/${templatePlanId}/assign`, {
+  const plan = await api.post<any>(`/training-plans/${templatePlanId}/assign`, {
     client_id: clientId,
     start_date: startDate,
     duration_weeks: durationWeeks,
   })
-  return getTrainingPlanById(templatePlanId) ?? undefined
+  return mapPlan(plan)
 }

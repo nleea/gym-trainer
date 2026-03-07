@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../../stores/auth';
 import ExercisesLibrary from './ExercisesLibrary.vue';
-import TrainingPlanlist from '../../components/TrainingPlanlist.vue';
+import type { NutritionPlan, TrainingPlan } from '../../types';
+import { listTrainingPlans, deleteTrainingPlan } from '../../repo/training';
+import { listNutritionPlans, deleteNutritionPlan } from '../../repo/nutritionPlan';
+import { useAppToast } from '@/composables/useAppToast';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+const router = useRouter();
+const toast = useAppToast();
 
 type Exercise = {
   id: string;
@@ -28,6 +34,11 @@ const exercises = ref<Exercise[]>([]);
 const showAddExercise = ref(false);
 
 const hydrated = ref(false);
+const templatesLoading = ref(false);
+const deletingTemplateId = ref<string | null>(null);
+const templateTab = ref<'training' | 'nutrition'>('training');
+const trainingTemplates = ref<TrainingPlan[]>([]);
+const nutritionTemplates = ref<NutritionPlan[]>([]);
 
 function hydrateFromUser() {
   const u = user.value;
@@ -77,6 +88,71 @@ const handleSaveProfile = async () => {
     isSaving.value = false;
   }
 };
+
+const visibleTrainingTemplates = computed(() =>
+  trainingTemplates.value.filter((p: any) => p.isTemplate !== false),
+);
+const visibleNutritionTemplates = computed(() =>
+  nutritionTemplates.value.filter((p: any) => p.isTemplate !== false),
+);
+
+async function loadTemplates() {
+  templatesLoading.value = true;
+  try {
+    const [training, nutrition] = await Promise.all([listTrainingPlans(), listNutritionPlans()]);
+    trainingTemplates.value = training;
+    nutritionTemplates.value = nutrition;
+  } catch (err) {
+    console.error('Error loading templates:', err);
+    toast.error('No se pudieron cargar las plantillas');
+  } finally {
+    templatesLoading.value = false;
+  }
+}
+
+function editTrainingTemplate(planId: string) {
+  router.push(`/trainer/plans/training/${planId}`);
+}
+
+function editNutritionTemplate(planId: string) {
+  router.push(`/trainer/plans/nutrition/${planId}/edit`);
+}
+
+async function removeTrainingTemplate(planId: string) {
+  const ok = window.confirm('¿Eliminar esta plantilla de entrenamiento? Las copias de clientes no se borrarán.');
+  if (!ok) return;
+  deletingTemplateId.value = planId;
+  try {
+    await deleteTrainingPlan(planId);
+    trainingTemplates.value = trainingTemplates.value.filter((p) => p.id !== planId);
+    toast.success('Plantilla eliminada');
+  } catch (err) {
+    console.error('Error deleting training template:', err);
+    toast.error('No se pudo eliminar la plantilla');
+  } finally {
+    deletingTemplateId.value = null;
+  }
+}
+
+async function removeNutritionTemplate(planId: string) {
+  const ok = window.confirm('¿Eliminar esta plantilla de nutrición? Las copias de clientes no se borrarán.');
+  if (!ok) return;
+  deletingTemplateId.value = planId;
+  try {
+    await deleteNutritionPlan(planId);
+    nutritionTemplates.value = nutritionTemplates.value.filter((p) => p.id !== planId);
+    toast.success('Plantilla eliminada');
+  } catch (err) {
+    console.error('Error deleting nutrition template:', err);
+    toast.error('No se pudo eliminar la plantilla');
+  } finally {
+    deletingTemplateId.value = null;
+  }
+}
+
+onMounted(async () => {
+  await loadTemplates();
+});
 </script>
 
 <template>
@@ -179,19 +255,121 @@ const handleSaveProfile = async () => {
     </div>
 
     <div class="bg-card rounded-xl border border-border">
-      <div
-        class="p-4 lg:p-6 border-b border-border flex items-center justify-between"
-      >
+      <div class="p-4 lg:p-6 border-b border-border flex items-start justify-between gap-4">
         <div>
           <h2 class="font-semibold text-foreground">
             {{ t('trainer.settings.trainingLibrary') }}
           </h2>
           <p class="text-sm text-muted-foreground">
-            {{ t('trainer.settings.trainingLibraryDesc') }}
+            Gestiona plantillas globales. Solo se listan templates, no planes ya asignados.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="px-3 py-2 rounded-lg border border-border hover:bg-muted text-sm"
+            @click="loadTemplates"
+            :disabled="templatesLoading"
+          >
+            {{ templatesLoading ? 'Actualizando...' : 'Actualizar' }}
+          </button>
+          <button
+            type="button"
+            class="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:opacity-90"
+            @click="templateTab === 'training' ? router.push('/trainer/plans/training/new') : router.push('/trainer/plans/nutrition/new')"
+          >
+            + Nueva plantilla
+          </button>
+        </div>
+      </div>
+
+      <div class="p-4 lg:p-6 space-y-4">
+        <div class="inline-flex rounded-lg border border-border overflow-hidden">
+          <button
+            class="px-3 py-2 text-sm"
+            :class="templateTab === 'training' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+            @click="templateTab = 'training'"
+          >
+            Entrenamiento
+          </button>
+          <button
+            class="px-3 py-2 text-sm border-l border-border"
+            :class="templateTab === 'nutrition' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+            @click="templateTab = 'nutrition'"
+          >
+            Nutrición
+          </button>
+        </div>
+
+        <div v-if="templateTab === 'training'" class="space-y-3">
+          <div
+            v-for="tpl in visibleTrainingTemplates"
+            :key="tpl.id"
+            class="rounded-xl border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="min-w-0">
+              <p class="font-medium text-foreground truncate">{{ tpl.name }}</p>
+              <p class="text-xs text-muted-foreground mt-1">
+                Asignada a {{ (tpl as any).copiesCount ?? 0 }} clientes
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="px-3 py-2 rounded-lg border border-border hover:bg-muted text-sm"
+                @click="editTrainingTemplate(String(tpl.id))"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                class="px-3 py-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-sm disabled:opacity-60"
+                :disabled="deletingTemplateId === tpl.id"
+                @click="removeTrainingTemplate(String(tpl.id))"
+              >
+                {{ deletingTemplateId === tpl.id ? 'Eliminando...' : 'Eliminar' }}
+              </button>
+            </div>
+          </div>
+          <p v-if="!templatesLoading && visibleTrainingTemplates.length === 0" class="text-sm text-muted-foreground">
+            No tienes plantillas de entrenamiento creadas.
           </p>
         </div>
 
-        <TrainingPlanlist />
+        <div v-else class="space-y-3">
+          <div
+            v-for="tpl in visibleNutritionTemplates"
+            :key="tpl.id"
+            class="rounded-xl border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="min-w-0">
+              <p class="font-medium text-foreground truncate">{{ tpl.name }}</p>
+              <p class="text-xs text-muted-foreground mt-1">
+                Asignada a {{ (tpl as any).copiesCount ?? 0 }} clientes
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="px-3 py-2 rounded-lg border border-border hover:bg-muted text-sm"
+                @click="editNutritionTemplate(String(tpl.id))"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                class="px-3 py-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 text-sm disabled:opacity-60"
+                :disabled="deletingTemplateId === tpl.id"
+                @click="removeNutritionTemplate(String(tpl.id))"
+              >
+                {{ deletingTemplateId === tpl.id ? 'Eliminando...' : 'Eliminar' }}
+              </button>
+            </div>
+          </div>
+          <p v-if="!templatesLoading && visibleNutritionTemplates.length === 0" class="text-sm text-muted-foreground">
+            No tienes plantillas de nutrición creadas.
+          </p>
+        </div>
       </div>
     </div>
   </div>

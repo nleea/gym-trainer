@@ -74,6 +74,7 @@
                       </div>
                       <div class="min-w-0">
                         <p class="text-sm font-medium text-foreground truncate">{{ plan.name }}</p>
+                        <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Plantilla</span>
                         <p v-if="plan.description" class="text-xs text-muted-foreground truncate">{{ plan.description }}</p>
                       </div>
                     </div>
@@ -146,7 +147,9 @@ const error = ref<string | null>(null)
 const assigning = ref(false)
 
 const currentPlans = computed(() =>
-  activeTab.value === 'training' ? trainingPlans.value : nutritionPlans.value
+  (activeTab.value === 'training' ? trainingPlans.value : nutritionPlans.value).filter(
+    (plan: any) => plan.isTemplate !== false,
+  )
 )
 
 watch(activeTab, () => {

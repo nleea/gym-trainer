@@ -16,6 +16,8 @@ import {
 } from '../repo/useExerciseLibrary';
 
 import { useAppToast } from '@/composables/useAppToast'
+import ExerciseSearchDrawer from '@/components/ExerciseSearchDrawer.vue'
+import type { ExerciseItem } from '@/repo/exercisesRepo'
 const toast = useAppToast()
 
 type EditableTrainingPlan = {
@@ -72,6 +74,14 @@ const plan = computed<EditableTrainingPlan>({
   },
 });
 
+const isTemplateEditing = computed(
+  () => Boolean((plan.value as any).isTemplate || (plan.value as any).is_template),
+);
+const sourceTemplateLabel = computed(() => {
+  const source = (plan.value as any).sourceTemplateId || (plan.value as any).source_template_id;
+  return source ? String(source) : 'Sin origen';
+});
+
 /** ---------- init ---------- */
 onMounted(async () => {
   await loadTrainingPlans();
@@ -89,6 +99,7 @@ onMounted(async () => {
 
 /** ---------- UI state ---------- */
 const showExerciseModal = ref(false);
+const showExerciseSearchDrawer = ref(false);
 const currentWeekIndex = ref(0);
 const currentDayIndex = ref(0);
 
@@ -213,6 +224,12 @@ const openExerciseModal = (weekIndex: number, dayIndex: number) => {
   libNotes.value = '';
   showExerciseModal.value = true;
 };
+
+const applyExerciseFromLibrary = (exercise: ExerciseItem) => {
+  newExercise.value.name = exercise.name
+  newExercise.muscleGroup = exercise.bodyPart || ''
+  exerciseModalTab.value = 'manual'
+}
 
 const addExerciseManualToPlan = () => {
   if (!newExercise.value.name || !newExercise.value.muscleGroup) return;
@@ -490,7 +507,7 @@ function dayLabel(key: string) {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
         </svg>
-        {{ saving ? 'Guardando…' : 'Guardar' }}
+        {{ saving ? 'Guardando…' : (isTemplateEditing ? 'Guardar plantilla' : 'Guardar cambios') }}
       </button>
     </div>
 
@@ -498,6 +515,19 @@ function dayLabel(key: string) {
          BODY
          ══════════════════════════════════════════ -->
     <div class="flex-1 space-y-5 p-4 lg:p-6">
+
+      <div
+        v-if="isTemplateEditing"
+        class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        ⚠️ Estás editando una plantilla global. Los cambios aplicarán a futuras asignaciones. Los clientes que ya tienen esta plantilla NO se ven afectados.
+      </div>
+      <div
+        v-else-if="plan.id"
+        class="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+      >
+        <strong class="text-foreground">Plan personalizado</strong> · origen: {{ sourceTemplateLabel }}
+      </div>
 
       <!-- Description -->
       <div class="rounded-2xl border bg-card p-4 shadow-sm">
@@ -863,8 +893,23 @@ function dayLabel(key: string) {
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="space-y-1 sm:col-span-2">
                     <span class="text-xs font-medium text-muted-foreground">Nombre *</span>
-                    <input v-model="newExercise.name" type="text" required placeholder="Ej: Sentadilla con barra"
-                      class="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"/>
+                    <div class="flex gap-2">
+                      <button
+                        type="button"
+                        @click="showExerciseSearchDrawer = true"
+                        class="rounded-xl border px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+                      >
+                        Buscar ejercicio
+                      </button>
+                      <input
+                        v-model="newExercise.name"
+                        type="text"
+                        required
+                        placeholder="Ejercicio seleccionado..."
+                        class="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        readonly
+                      />
+                    </div>
                   </label>
 
                   <label class="space-y-1 sm:col-span-2">
@@ -1070,6 +1115,12 @@ function dayLabel(key: string) {
         </div>
       </div>
     </Teleport>
+
+    <ExerciseSearchDrawer
+      v-model:open="showExerciseSearchDrawer"
+      mode="plan"
+      :on-select="applyExerciseFromLibrary"
+    />
 
   </div>
 </template>

@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useEvidencesStore } from '../stores/evidences.store';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const { user, logout } = useAuthStore();
+const evidencesStore = useEvidencesStore();
 
 const isMobileMenuOpen = ref(false);
 const sidebarCollapsed = ref(
@@ -53,6 +55,16 @@ const isActive = (path: string) => {
   if (path === '/client') return route.path === '/client';
   return route.path.startsWith(path);
 };
+
+const ownClientId = computed(() => (user.value as any)?.client_id || (user.value as any)?.uid || '')
+const unviewedEvidenceCount = computed(
+  () => evidencesStore.getPendingForClient(ownClientId.value).unviewed_responded || 0,
+)
+
+onMounted(async () => {
+  if (!ownClientId.value) return
+  await evidencesStore.loadPendingCount(ownClientId.value)
+})
 
 const handleLogout = () => {
   logout();
@@ -222,6 +234,12 @@ const handleLogout = () => {
               />
             </svg>
             <span>{{ item.name }}</span>
+            <span
+              v-if="item.path === '/client/daily-log' && unviewedEvidenceCount > 0"
+              class="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground"
+            >
+              {{ unviewedEvidenceCount }}
+            </span>
           </RouterLink>
         </nav>
         <div class="border-t border-border px-4 py-3">
@@ -354,6 +372,12 @@ const handleLogout = () => {
             :class="sidebarCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'"
             >{{ item.name }}</span
           >
+          <span
+            v-if="item.path === '/client/daily-log' && unviewedEvidenceCount > 0 && !sidebarCollapsed"
+            class="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground"
+          >
+            {{ unviewedEvidenceCount }}
+          </span>
         </RouterLink>
       </nav>
 
@@ -460,7 +484,7 @@ const handleLogout = () => {
           v-for="item in navigation"
           :key="item.path"
           :to="item.path"
-          class="flex min-w-[4.5rem] flex-1 flex-col items-center gap-0.5 px-1 py-2 transition-colors"
+          class="relative flex min-w-[4.5rem] flex-1 flex-col items-center gap-0.5 px-1 py-2 transition-colors"
           :class="
             isActive(item.path) ? 'text-primary' : 'text-muted-foreground'
           "
@@ -508,6 +532,12 @@ const handleLogout = () => {
             />
           </svg>
           <span class="text-[10px] font-medium truncate">{{ item.name }}</span>
+          <span
+            v-if="item.path === '/client/daily-log' && unviewedEvidenceCount > 0"
+            class="absolute -top-0.5 right-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground"
+          >
+            {{ unviewedEvidenceCount }}
+          </span>
         </RouterLink>
       </div>
     </nav>

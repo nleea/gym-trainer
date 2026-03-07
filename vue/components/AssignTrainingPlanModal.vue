@@ -52,7 +52,7 @@ watch(
   },
 );
 
-const templates = computed(() => trainingPlans.value);
+const templates = computed(() => (trainingPlans.value || []).filter((p: any) => p.isTemplate !== false));
 
 const selectedPlan = computed(() =>
   templates.value.find((p) => p.id === selectedTemplateId.value),
@@ -186,7 +186,7 @@ const handleAssign = async () => {
               >
                 <option value="" disabled>Seleccionar plan...</option>
                 <option v-for="p in templates" :key="p.id" :value="p.id">
-                  {{ p.name }}
+                  {{ p.name }} · Plantilla
                 </option>
               </select>
 
