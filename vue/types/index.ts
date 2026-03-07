@@ -19,8 +19,8 @@ export interface Client extends User {
   weight?: number
   height?: number
   age?: number
-  planId?: string
-  nutritionplanId?: string
+  plan_id?: string
+  nutrition_plan_id?: string
 }
 
 // Attendance
@@ -135,6 +135,7 @@ export interface NutritionPlan {
   targetProtein?: number
   targetCarbs?: number
   targetFat?: number
+  water_ml?: number
   days: NutritionDay[]
   weeks?: NutritionWeek[]
   recommendedFoods?: string[]
@@ -271,4 +272,3 @@ export type BodyMetricsEntry = {
 
   measurementProtocol?: "navel" | "natural_waist" | null
 }
-

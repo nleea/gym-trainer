@@ -147,9 +147,9 @@ const handleLogout = () => {
     >
       <div
         v-if="isMobileMenuOpen"
-        class="sticky top-[57px] z-30 border-b border-border bg-card shadow-lg lg:hidden"
+        class="sticky top-[57px] z-30 max-h-[calc(100dvh-57px)] overflow-y-auto border-b border-border bg-card shadow-lg lg:hidden"
       >
-        <nav class="px-4 py-2 space-y-1">
+        <nav class="space-y-1 px-4 py-2">
           <RouterLink
             v-for="item in navigation"
             :key="item.path"
@@ -443,24 +443,24 @@ const handleLogout = () => {
 
     <!-- ── Main Content ──────────────────────────────────────────────── -->
     <main
-      class="min-h-screen pb-20 transition-all duration-300 ease-in-out lg:pb-8"
+      class="min-h-screen pb-24 transition-all duration-300 ease-in-out lg:pb-8"
       :class="sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'"
     >
-      <div class="px-4 py-6 mx-auto max-w-5xl">
+      <div class="mx-auto w-[90%] py-5 sm:py-6">
         <RouterView />
       </div>
     </main>
 
     <!-- ── Bottom Navigation (Mobile) ───────────────────────────────── -->
     <nav
-      class="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card lg:hidden"
+      class="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      <div class="flex justify-around">
+      <div class="flex overflow-x-auto px-1">
         <RouterLink
           v-for="item in navigation"
           :key="item.path"
           :to="item.path"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 px-1 transition-colors"
+          class="flex min-w-[4.5rem] flex-1 flex-col items-center gap-0.5 px-1 py-2 transition-colors"
           :class="
             isActive(item.path) ? 'text-primary' : 'text-muted-foreground'
           "

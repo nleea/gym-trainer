@@ -17,6 +17,7 @@ import {
   createNutritionPlan,
   assignNutritionTemplateToClient as assignNutritionTemplateToClientRepo
 } from "../repo/nutritionPlan"
+import { getClientNutritionPlan as getClientNutritionPlanFromClientRepo } from "../repo/clients"
 
 import { useClientsStore } from "./clients.store"
 
@@ -88,14 +89,18 @@ export const usePlansStore = defineStore("plans", {
     async fetchClientNutritionPlan(clientId: string, nutritionPlan: string) {
       if (!clientId) return null
 
-      if (this.nutritionPlanByClient[clientId] !== undefined) {
+      if (
+        this.nutritionPlanByClient[clientId] !== undefined &&
+        this.nutritionPlanByClient[clientId]?.id === nutritionPlan
+      ) {
         return this.nutritionPlanByClient[clientId] ?? null
       }
 
       try {
           if (!nutritionPlan) {
-            this.nutritionPlanByClient[clientId] = null
-            return null
+            const planFromClient = await getClientNutritionPlanFromClientRepo(clientId)
+            this.nutritionPlanByClient[clientId] = planFromClient ?? null
+            return planFromClient ?? null
           }
 
           const plan = await getNutritionPlanById(nutritionPlan)

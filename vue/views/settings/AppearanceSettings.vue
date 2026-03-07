@@ -324,7 +324,7 @@ onBeforeRouteLeave((_to, _from, next) => {
       <button
         @click="save"
         :disabled="!hasChanges || saving"
-        class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        class="hidden rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 sm:inline-flex"
       >
         {{ saving ? '...' : t('settings.appearance.save') }}
       </button>
@@ -351,20 +351,21 @@ onBeforeRouteLeave((_to, _from, next) => {
         </button>
       </nav>
 
-      <!-- Tabs mobile (reemplaza nav izquierda) -->
-      <div class="flex border-b sm:hidden w-full overflow-x-auto bg-card">
+      <!-- Navegación móvil vertical (arriba) -->
+      <div class="w-full border-b bg-card p-2 sm:hidden">
         <button
           v-for="item in navItems"
           :key="item.key"
           @click="activeSection = item.key"
           :class="[
-            'flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-xs font-medium transition-colors whitespace-nowrap',
+            'mb-1 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors last:mb-0',
             activeSection === item.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border text-muted-foreground'
           ]"
         >
-          {{ item.icon }} {{ t(item.labelKey) }}
+          <span class="text-base">{{ item.icon }}</span>
+          <span class="truncate">{{ t(item.labelKey) }}</span>
         </button>
       </div>
 
@@ -632,17 +633,17 @@ onBeforeRouteLeave((_to, _from, next) => {
     </div>
 
     <!-- ── Footer ─────────────────────────────────────────────────────────── -->
-    <footer class="flex items-center justify-between border-t bg-card px-4 py-3 sm:px-6">
+    <footer class="sticky bottom-0 z-10 flex flex-col gap-2 border-t bg-card px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-3">
       <button
         @click="resetAll"
-        class="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        class="w-full rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:w-auto"
       >
         {{ t('settings.appearance.reset_all') }}
       </button>
       <button
         @click="save"
         :disabled="!hasChanges || saving"
-        class="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        class="w-full rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
       >
         {{ saving ? '...' : t('settings.appearance.save') }}
       </button>

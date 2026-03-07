@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 pb-8">
+  <div class="space-y-5 pb-8 sm:space-y-6">
 
     <!-- ══════════════════════════════════════════════
          HEADER
@@ -17,7 +17,7 @@
           <p class="text-sm font-medium text-muted-foreground">
             {{ new Date().getHours() < 12 ? t('client.dashboard.greetingMorning') : new Date().getHours() < 18 ? t('client.dashboard.greetingAfternoon') : t('client.dashboard.greetingEvening') }} 👋
           </p>
-          <h1 class="text-3xl font-black leading-none tracking-tight text-foreground">
+          <h1 class="text-2xl font-black leading-none tracking-tight text-foreground sm:text-3xl">
             {{ authStore.user?.name?.split(' ')[0] ?? authStore.user?.name }}
           </h1>
           <p class="pt-0.5 text-xs capitalize text-muted-foreground">
@@ -37,6 +37,37 @@
       </div>
     </div>
 
+
+    <!-- ══════════════════════════════════════════════
+         WEEKLY CHECK-IN BANNER
+    ══════════════════════════════════════════════ -->
+    <div class="card-enter" style="--anim-delay: 40ms">
+      <!-- Pending -->
+      <router-link
+        v-if="!checkinStore.currentCheckin"
+        to="/client/weekly-checkin"
+        class="checkin-banner checkin-pending"
+      >
+        <span class="text-xl flex-shrink-0">📋</span>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-foreground">Check-in semanal pendiente</p>
+          <p class="text-xs text-muted-foreground">Como fue tu semana? Cuentale a tu trainer.</p>
+        </div>
+        <span class="text-xs font-semibold text-primary flex-shrink-0 whitespace-nowrap">Hacer check-in →</span>
+      </router-link>
+      <!-- Completed -->
+      <router-link
+        v-else
+        to="/client/weekly-checkin"
+        class="checkin-banner checkin-done"
+      >
+        <span class="text-xl flex-shrink-0">✓</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-bold" style="color: var(--chart-2)">Check-in completado</p>
+          <p class="text-xs text-muted-foreground">Ver o editar respuestas</p>
+        </div>
+      </router-link>
+    </div>
 
     <!-- ══════════════════════════════════════════════
          DAY PROGRESS BAR
@@ -186,7 +217,7 @@
         style="--anim-delay: 480ms"
       >
         <!-- Card header -->
-        <div class="flex items-center justify-between border-b px-6 py-4">
+        <div class="flex items-center justify-between border-b px-4 py-4 sm:px-6">
           <div class="flex items-center gap-3">
             <h2 class="text-base font-bold text-foreground">{{ t('client.dashboard.workoutToday') }}</h2>
             <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase capitalize tracking-wide text-muted-foreground">
@@ -201,7 +232,7 @@
           </router-link>
         </div>
 
-        <div class="p-6">
+        <div class="p-4 sm:p-6">
           <!-- Workout exists -->
           <div v-if="todayWorkout" class="space-y-5">
             <p class="text-xs text-muted-foreground">
@@ -289,7 +320,7 @@
         style="--anim-delay: 560ms"
       >
         <!-- Card header -->
-        <div class="flex items-center justify-between border-b px-6 py-4">
+        <div class="flex items-center justify-between border-b px-4 py-4 sm:px-6">
           <h2 class="text-base font-bold text-foreground">{{ t('client.dashboard.nutritionToday') }}</h2>
           <router-link
             to="/client/nutrition"
@@ -299,12 +330,12 @@
           </router-link>
         </div>
 
-        <div class="p-6">
+        <div class="p-4 sm:p-6">
           <!-- Nutrition plan exists -->
           <div v-if="todayNutrition.length > 0" class="space-y-5">
 
             <!-- Macro rings -->
-            <div class="flex items-end justify-around">
+            <div class="flex items-end justify-between gap-2 overflow-x-auto pb-1 sm:justify-around">
 
               <!-- Proteína -->
               <div class="macro-ring-wrap">
@@ -425,13 +456,15 @@ import { computed, watch} from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../../stores/auth';
-import { dayKey } from '../../../lib/utils';
+import { dayKey, weekKey } from '../../../lib/utils';
 import { usePlansStore } from '../../stores/plan.store';
 import { useLogsStore } from '../../stores/logs.store';
 import { useMetricsStore } from '../../stores/metrics.store';
 import { useClientsStore } from '../../stores/clients.store';
 import {  getActiveWeekIndexFromAssignedAt } from "../../../lib/helpers";
-import { useI18n } from 'vue-i18n';
+import { useI18n } from 'vue-i18n'
+import { useCheckinStore } from '../../stores/checkin.store';
+import { useNutritionStore } from '../../stores/nutrition.store';
 
 const { t, locale } = useI18n();
 
@@ -443,7 +476,9 @@ const authStore = useAuthStore();
 const trainig = usePlansStore();
 const logs = useLogsStore();
 const metricsStore = useMetricsStore();
-const clientStore = useClientsStore();
+const clientStore = useClientsStore()
+const checkinStore = useCheckinStore();
+const nutritionStore = useNutritionStore();
 
 // ✅ refs reactivos
 const { user } = storeToRefs(authStore);
@@ -451,8 +486,10 @@ const { user } = storeToRefs(authStore);
 const { mealLogs, trainingLogsByWeekKey } = storeToRefs(logs);
 
 const clientId = computed(() => user.value?.client_id || user.value?.uid || '');
-const planid = computed(() => user.value?.plan || user.value?.uid || '');
-const nutritionPlanId = computed(() => user.value?.nutriton_plan || user.value?.uid || '');
+const planid = computed(() => user.value?.plan || (user.value as any)?.plan_id || '');
+const nutritionPlanId = computed(() =>
+  user.value?.nutriton_plan || (user.value as any)?.nutrition_plan_id || ''
+);
 
 watch(
   [clientId, planid, nutritionPlanId],
@@ -467,8 +504,11 @@ watch(
       await logs.loadProgressEntries(newClientId);
 
       await metricsStore.loadClientMetrics(newClientId);
+      await nutritionStore.loadSummary(newClientId, new Date(), true);
 
-      await clientStore.fetchPlanTrining(plan)
+      await clientStore.fetchPlanTrining(newClientId)
+      await clientStore.fetchNutritionPlan(newClientId)
+      await checkinStore.loadCurrentCheckin(newClientId)
     }
   },
   { immediate: true },
@@ -507,7 +547,9 @@ const greetingMessage = computed(() => {
  */
 const completedWorkouts = computed(() => {
   if (!clientId.value) return 0;
-  const logs = trainingLogsByWeekKey.value?.[clientId.value];
+  const key = weekKey(clientId.value);
+  const logs = trainingLogsByWeekKey.value?.[key];
+  console.log(logs)
   if (!logs) return 0;
   return logs.filter((l) => l.clientId === clientId.value).length;
 });
@@ -526,8 +568,10 @@ const todayNutrition = computed(() => {
   const plannedMeals = todayPlanDay?.meals ?? [];
 
   const today = new Date();
+  const getMealClientId = (m: any) => m.clientId ?? m.client_id ?? '';
   const mealsLoggedToday = mealLogs.value.filter(
-    (m) => m.clientId === clientId.value && isSameDay(jsDate(m.date), today),
+    (m: any) =>
+      getMealClientId(m) === clientId.value && isSameDay(jsDate(m.date), today),
   );
 
   // marca si esa comida "ya fue registrada" por tipo (desayuno/almuerzo/cena/snack)
@@ -543,6 +587,24 @@ const todayMeals = computed(
   () => todayNutrition.value.filter((m) => m.registered).length,
 );
 const totalMealsPlanned = computed(() => todayNutrition.value.length);
+
+const workoutProgressRatio = computed(() => (todayWorkout.value?.completed ? 1 : 0));
+
+const mealsProgressRatio = computed(() => {
+  if (!totalMealsPlanned.value) return 0;
+  return Math.min(1, todayMeals.value / totalMealsPlanned.value);
+});
+
+const waterProgressRatio = computed(() => {
+  if (!clientId.value) return 0;
+  const summary = nutritionStore.getSummary(clientId.value, new Date());
+  const consumed = summary?.today_macros?.water_ml?.consumed ?? 0;
+  const target = summary?.today_macros?.water_ml?.target ?? 0;
+  if (!target) return 0;
+  return Math.min(1, consumed / target);
+});
+
+const metricsProgressRatio = computed(() => (currentWeight.value != null ? 1 : 0));
 
 /**
  * ✅ Calorías/macros del plan de hoy
@@ -617,7 +679,8 @@ function calcCurrentStreak(logs: { date: any }[], allowSkipToday = true) {
 }
 
 const currentStreak = computed(() => {
-  const logs = trainingLogsByWeekKey.value?.[clientId.value] ?? [];
+  const key = weekKey(clientId.value);
+  const logs = trainingLogsByWeekKey.value?.[key] ?? [];
   return calcCurrentStreak(logs, true);
 });
 
@@ -636,7 +699,8 @@ const todayWorkout = computed(() => {
   if (!day) return null;
 
   const today = new Date();
-  const completed = trainingLogsByWeekKey.value[clientId.value]
+  const key = weekKey(clientId.value);
+  const completed = trainingLogsByWeekKey.value[key]
     ?.filter((l) => l.clientId === clientId.value)
     .some((l) => isSameDay(jsDate(l.date), today));
 
@@ -654,29 +718,34 @@ const dayCheckpoints = computed(() => [
   {
     label: 'Entrenamiento',
     icon: '⚡',
-    done: todayWorkout.value?.completed ?? false,
+    done: workoutProgressRatio.value >= 1,
   },
   {
     label: 'Comidas',
     icon: '🥗',
-    done: todayMeals.value > 0,
+    done: mealsProgressRatio.value >= 1,
   },
   {
     label: 'Agua',
     icon: '💧',
-    done: false, // no water tracking in current stores
+    done: waterProgressRatio.value >= 1,
   },
   {
     label: 'Métricas',
     icon: '📊',
-    done: currentWeight.value != null,
+    done: metricsProgressRatio.value >= 1,
   },
 ]);
 
 /** Porcentaje completado del día (0–100) */
 const dayProgress = computed(() => {
-  const done = dayCheckpoints.value.filter((c) => c.done).length;
-  return Math.round((done / dayCheckpoints.value.length) * 100);
+  const totalRatio =
+    workoutProgressRatio.value +
+    mealsProgressRatio.value +
+    waterProgressRatio.value +
+    metricsProgressRatio.value;
+
+  return Math.round((totalRatio / 4) * 100);
 });
 
 
@@ -969,6 +1038,27 @@ void waistDelta;
 }
 
 /* ────────────────────────────────────────
+   Check-in banner
+──────────────────────────────────────── */
+.checkin-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s;
+}
+.checkin-banner:hover { background: var(--muted); transform: translateY(-1px); }
+.checkin-pending { border-color: color-mix(in oklch, var(--primary) 30%, transparent); }
+.checkin-done {
+  border-color: color-mix(in oklch, var(--chart-2) 30%, transparent);
+  background: color-mix(in oklch, var(--chart-2) 5%, transparent);
+}
+
+/* ────────────────────────────────────────
    Meal chips (nutrition card)
 ──────────────────────────────────────── */
 .meal-chip {
@@ -1002,5 +1092,18 @@ void waistDelta;
 .meal-dot-pending {
   border: 1.5px solid var(--border);
   background: transparent;
+}
+
+@media (max-width: 640px) {
+  .stat-inner { padding: 14px; }
+  .stat-number { font-size: 1.45rem; }
+  .macro-ring {
+    width: 64px;
+    height: 64px;
+  }
+  .macro-ring-svg {
+    width: 64px;
+    height: 64px;
+  }
 }
 </style>

@@ -26,6 +26,13 @@ import TaskCalendar from '../../components/taskCalendar.vue';
 import type { TrainingLog } from '../../types';
 
 type DayStatus = 'completed' | 'planned' | 'rest' | 'empty';
+type NutritionStatus = 'completed' | 'planned' | 'empty';
+type PanelView = 'workout' | 'nutrition';
+type OpenDayPayload = {
+  date: Date;
+  viewType: 'workouts' | 'meals';
+  taskType?: 'workout' | 'nutrition' | 'rest' | 'checkup';
+};
 
 // Sun=0 Mon=1 ... Sat=6, matching getDay()
 const DAY_KEYS = [
@@ -129,21 +136,55 @@ function dayStatusFor(date: Date): DayStatus {
 const isPanelOpen = ref(false);
 const selectedDate = ref<Date>(new Date());
 const today = new Date();
+const panelView = ref<PanelView>('workout');
 
-function openPanel(date: Date) {
-  selectedDate.value = new Date(date);
+function openPanel(payload: OpenDayPayload) {
+  selectedDate.value = new Date(payload.date);
+  panelView.value =
+    payload.taskType === 'nutrition' || payload.viewType === 'meals'
+      ? 'nutrition'
+      : 'workout';
   isPanelOpen.value = true;
 }
 function closePanel() {
   isPanelOpen.value = false;
 }
 
-const selectedStatus = computed(() => dayStatusFor(selectedDate.value));
+const selectedWorkoutStatus = computed(() => dayStatusFor(selectedDate.value));
 const selectedExercises = computed(() =>
   planExercisesForDate(selectedDate.value),
 );
 const selectedLog = computed(() => logForDate(selectedDate.value));
 const isSelectedToday = computed(() => isSameDay(selectedDate.value, today));
+const selectedMeals = computed(() => mealsForDate(selectedDate.value));
+const selectedMealLogs = computed(() => {
+  const weekLogs =
+    logsStore.getClientMealsWeekCached(clientId.value, selectedDate.value) ?? [];
+  return weekLogs.filter((log: any) => {
+    const logDate = toJsDate(log.date);
+    return logDate ? isSameLocalDay(logDate, selectedDate.value) : false;
+  });
+});
+const selectedLoggedMealTypes = computed(
+  () => new Set(selectedMealLogs.value.map((log: any) => log.type)),
+);
+const selectedMealsDetailed = computed(() =>
+  selectedMeals.value.map((meal: any) => ({
+    ...meal,
+    registered: selectedLoggedMealTypes.value.has(meal.type),
+  })),
+);
+const selectedNutritionStatus = computed<NutritionStatus>(() => {
+  if (!selectedMeals.value.length) return 'empty';
+  const completed = selectedMealsDetailed.value.filter((meal: any) => meal.registered)
+    .length;
+  return completed >= selectedMeals.value.length ? 'completed' : 'planned';
+});
+const selectedStatus = computed(() =>
+  panelView.value === 'nutrition'
+    ? selectedNutritionStatus.value
+    : selectedWorkoutStatus.value,
+);
 
 const selectedLogStats = computed(() => {
   const log = selectedLog.value;
@@ -188,6 +229,11 @@ function goToLog() {
   router.push('/client/daily-log');
 }
 
+function goToNutrition() {
+  closePanel();
+  router.push('/client/nutrition');
+}
+
 // ── Format helpers ────────────────────────────────────────────────────────
 function fmtDayAbbr(d: Date) {
   return format(d, 'EEE', { locale: es }).toUpperCase().slice(0, 3);
@@ -207,6 +253,7 @@ watch(
         plansStore.fetchClientTrainingPlan(id, pId),
         plansStore.fetchClientNutritionPlan(id),
         logsStore.loadAllClientLogs(id),
+        logsStore.loadMealsLogWeek(id, new Date()),
       ]);
     } finally {
       loading.value = false;
@@ -214,16 +261,25 @@ watch(
   },
   { immediate: true },
 );
+
+watch(
+  [clientId, selectedDate],
+  async ([id, day]) => {
+    if (!id) return;
+    await logsStore.loadMealsLogWeek(id, day);
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
-  <div>
+  <div class="space-y-4 sm:space-y-5">
     <!-- ── Header ───────────────────────────────────────────────────────── -->
     <div class="mb-5">
       <p class="text-xs font-semibold uppercase tracking-widest text-primary">
         {{ t('client.training.title') }}
       </p>
-      <h1 class="mt-0.5 text-2xl font-black text-foreground">
+      <h1 class="mt-0.5 text-xl font-black text-foreground sm:text-2xl">
         {{ t('client.training.myTraining') }}
       </h1>
       <p
@@ -341,10 +397,14 @@ watch(
                   selectedStatus === 'completed'
                     ? '✓ Completado'
                     : selectedStatus === 'planned'
-                      ? '💪 Planificado'
-                      : selectedStatus === 'rest'
-                        ? '😴 Descanso'
-                        : 'Sin plan'
+                      ? panelView === 'nutrition'
+                        ? '🥗 En progreso'
+                        : '💪 Planificado'
+                      : panelView === 'nutrition'
+                        ? 'Sin comidas planificadas'
+                        : selectedStatus === 'rest'
+                          ? '😴 Descanso'
+                          : 'Sin plan'
                 }}
               </span>
 
@@ -372,6 +432,7 @@ watch(
 
           <!-- Panel body (scrollable) -->
           <div class="flex-1 overflow-y-auto">
+            <template v-if="panelView === 'workout'">
             <!-- Rest / Empty state -->
             <div
               v-if="selectedStatus === 'rest' || selectedStatus === 'empty'"
@@ -579,10 +640,82 @@ watch(
                 </div>
               </div>
             </div>
+            </template>
+
+            <template v-else>
+              <div
+                v-if="selectedStatus === 'empty'"
+                class="flex flex-col items-center justify-center py-16 text-center"
+              >
+                <span class="text-5xl">🥗</span>
+                <p class="mt-4 text-base font-semibold text-foreground">
+                  Sin comidas planificadas
+                </p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  Este día no tiene comidas definidas en tu plan nutricional
+                </p>
+              </div>
+
+              <div v-else class="space-y-3 px-5 py-4">
+                <p
+                  class="text-xs font-bold uppercase tracking-widest text-muted-foreground"
+                >
+                  Comidas del día
+                </p>
+                <div
+                  v-for="(meal, idx) in selectedMealsDetailed"
+                  :key="meal.id ?? `${meal.type}-${idx}`"
+                  class="rounded-xl border p-4"
+                  :class="meal.registered ? 'border-success/20 bg-success/5' : 'bg-muted/20'"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="font-semibold text-foreground">
+                        {{ meal.name || meal.type || `Comida ${idx + 1}` }}
+                      </p>
+                      <p class="mt-1 text-xs capitalize text-muted-foreground">
+                        {{ meal.type || 'comida' }}
+                      </p>
+                      <p
+                        v-if="meal.notes"
+                        class="mt-2 text-xs italic text-muted-foreground"
+                      >
+                        "{{ meal.notes }}"
+                      </p>
+                    </div>
+                    <span
+                      class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                      :class="
+                        meal.registered
+                          ? 'bg-success/15 text-success'
+                          : 'bg-muted text-muted-foreground'
+                      "
+                    >
+                      {{ meal.registered ? 'Registrada' : 'Pendiente' }}
+                    </span>
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                    <span v-if="meal.calories" class="rounded-full bg-muted px-2 py-0.5">
+                      {{ meal.calories }} kcal
+                    </span>
+                    <span v-if="meal.protein" class="rounded-full bg-muted px-2 py-0.5">
+                      P {{ meal.protein }}g
+                    </span>
+                    <span v-if="meal.carbs" class="rounded-full bg-muted px-2 py-0.5">
+                      C {{ meal.carbs }}g
+                    </span>
+                    <span v-if="meal.fat" class="rounded-full bg-muted px-2 py-0.5">
+                      G {{ meal.fat }}g
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- Panel footer -->
           <div class="shrink-0 border-t p-4 space-y-2">
+            <template v-if="panelView === 'workout'">
             <!-- Register: only for today, not completed -->
             <button
               v-if="isSelectedToday && selectedStatus !== 'completed'"
@@ -625,6 +758,15 @@ watch(
                 />
               </svg>
               Ver sesión registrada →
+            </button>
+            </template>
+
+            <button
+              v-else
+              @click="goToNutrition"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
+            >
+              Registrar comida / agua
             </button>
 
             <button

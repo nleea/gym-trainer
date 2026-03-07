@@ -1,330 +1,343 @@
-<script setup lang="ts">
-import { computed, onMounted } from "vue"
-import { storeToRefs } from "pinia"
-import { useDataStore } from "@/stores/data"
-import { useAuthStore } from "@/stores/auth"
-import { useI18n } from "vue-i18n"
-
-const { t } = useI18n()
-
-const dataStore = useDataStore()
-const authStore = useAuthStore()
-
-// ✅ state + getters (reactivos)
-const {
-  clients,
-  activeClients,
-  trainingLogs,
-  mealLogs,
-  dailyDiaries,
-} = storeToRefs(dataStore)
-
-// ✅ actions
-const { loadClients, loadAttendance } = dataStore
-
-// Auth: depende cómo lo tengas en tu auth store
-// Si user es state del store:
-const { user } = storeToRefs(authStore)
-
-// userId reactivo (ajusta uid/id según tu modelo)
-const userId = computed(() => user.value?.uid ?? "")
-
-onMounted(async () => {
-  // Evita usar userId! si puede ser vacío
-  if (userId.value) {
-    // si tu loadClients recibe userId, pásalo; si no, quítalo
-    await loadClients(userId.value as any)
-  } else {
-    await loadClients("" as any)
-  }
-  await loadAttendance()
-})
-
-/**
- * ✅ HOY attendance
- * OJO: si en tu store getTodayAttendance es una función (como en tu composable),
- * lo correcto es llamarla desde dataStore, no desde storeToRefs.
- */
-const todayAttendance = computed(() => dataStore.getTodayAttendance())
-const attendedToday = computed(
-  () => todayAttendance.value.filter((a) => a.attended).length
-)
-
-/**
- * ✅ Recent logs (con .value porque vienen de storeToRefs)
- */
-const recentLogs = computed(() => {
-  const logs: { type: string; clientName: string; date: Date; description: string }[] = []
-
-  trainingLogs.value.slice(0, 3).forEach((log) => {
-    const client = clients.value.find((c) => c.id === log.clientId)
-    logs.push({
-      type: "training",
-      clientName: client?.name || t('trainer.dashboard.defaultName'),
-      date: new Date(log.date as any),
-      description: `${log.exercises.length} ${t('trainer.dashboard.exercises')}`,
-    })
-  })
-
-  mealLogs.value.slice(0, 3).forEach((log) => {
-    const client = clients.value.find((c) => c.id === log.clientId)
-    logs.push({
-      type: "meal",
-      clientName: client?.name || t('trainer.dashboard.defaultName'),
-      date: new Date(log.date as any),
-      description: log.description,
-    })
-  })
-
-  dailyDiaries.value.slice(0, 3).forEach((diary) => {
-    const client = clients.value.find((c) => c.id === diary.clientId)
-    logs.push({
-      type: "diary",
-      clientName: client?.name || t('trainer.dashboard.defaultName'),
-      date: new Date(diary.date as any),
-      description: `Energía: ${diary.energy}/5, Sueño: ${diary.sleep.toFixed(1)}h`,
-    })
-  })
-
-  return logs.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5)
-})
-
-/**
- * ✅ Clientes activos sin plan (placeholder)
- * (tu lógica random la dejé igual pero ahora sí reactiva)
- */
-const clientsWithoutPlan = computed(() => {
-  return activeClients.value
-    .filter((cl) => cl.planId === null || cl.planId === undefined)
-})
-
-// helpers UI
-const formatDate = (date: Date) => {
-  const today = new Date()
-  const diff = today.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-  if (days === 0) return t('common.today')
-  if (days === 1) return t('common.yesterday')
-  return t('common.daysAgo', { n: days })
-}
-
-const getLogIcon = (type: string) => {
-  switch (type) {
-    case "training": return "dumbbell"
-    case "meal": return "utensils"
-    case "diary": return "book"
-    default: return "activity"
-  }
-}
-
-const getLogColor = (type: string) => {
-  switch (type) {
-    case "training": return "text-primary"
-    case "meal": return "text-accent"
-    case "diary": return "text-chart-3"
-    default: return "text-muted-foreground"
-  }
-}
-</script>
-
-
 <template>
-  <div class="space-y-6">
+  <div class="dashboard-root">
     <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold text-foreground">
-        {{ t('trainer.dashboard.greeting') }}, {{ user?.name?.split(' ')[0] || t('trainer.dashboard.defaultName') }}
-      </h1>
-      <p class="text-muted-foreground">
-        {{ t('trainer.dashboard.subtitle') }}
-      </p>
+    <div class="dashboard-header">
+      <div>
+        <h1 class="text-2xl font-bold text-foreground">
+          Hola, {{ firstName }}
+        </h1>
+        <p class="text-sm text-muted-foreground mt-0.5">
+          {{ today }}
+        </p>
+      </div>
+      <RouterLink to="/trainer/clients" class="header-btn">
+        <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
+        </svg>
+        <span>Clientes</span>
+      </RouterLink>
     </div>
-    
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-card rounded-xl p-4 lg:p-6 border border-border">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-foreground">{{ activeClients.length }}</p>
-            <p class="text-sm text-muted-foreground">{{ t('trainer.dashboard.stats.activeClients') }}</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="bg-card rounded-xl p-4 lg:p-6 border border-border">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-foreground">{{ attendedToday }}</p>
-            <p class="text-sm text-muted-foreground">{{ t('trainer.dashboard.stats.attendance') }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-card rounded-xl p-4 lg:p-6 border border-border">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-chart-3/20 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-chart-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-foreground">{{ trainingLogs.length }}</p>
-            <p class="text-sm text-muted-foreground">{{ t('trainer.dashboard.stats.workoutsLogged') }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-card rounded-xl p-4 lg:p-6 border border-border">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-chart-4/20 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-chart-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-foreground">87%</p>
-            <p class="text-sm text-muted-foreground">{{ t('trainer.dashboard.stats.avgAdherence') }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Main Content Grid -->
-    <div class="grid lg:grid-cols-2 gap-6">
-      <!-- Recent Activity -->
-      <div class="bg-card rounded-xl border border-border">
-        <div class="p-4 lg:p-6 border-b border-border">
-          <h2 class="font-semibold text-foreground">{{ t('trainer.dashboard.recentActivity') }}</h2>
-        </div>
-        <div class="divide-y divide-border">
-          <div
-            v-for="(log, index) in recentLogs"
-            :key="index"
-            class="p-4 lg:px-6 flex items-start gap-3"
-          >
-            <div :class="['w-8 h-8 rounded-lg flex items-center justify-center', getLogColor(log.type)]" 
-                 :style="{ backgroundColor: log.type === 'training' ? 'var(--primary)' : log.type === 'meal' ? 'var(--accent)' : 'var(--chart-3)', opacity: 0.15 }">
-              <!-- Dumbbell -->
-              <svg v-if="log.type === 'training'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h2m12 0h2M4 18h2m12 0h2M7 6v12M17 6v12M7 12h10" />
-              </svg>
-              <!-- Utensils -->
-              <svg v-if="log.type === 'meal'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <!-- Book -->
-              <svg v-if="log.type === 'diary'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13M19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-foreground truncate">{{ log.clientName }}</p>
-              <p class="text-xs text-muted-foreground">{{ log.description }}</p>
-            </div>
-            <span class="text-xs text-muted-foreground whitespace-nowrap">{{ formatDate(log.date) }}</span>
-          </div>
-          <div v-if="recentLogs.length === 0" class="p-6 text-center text-muted-foreground">
-            {{ t('trainer.dashboard.noActivity') }}
-          </div>
-        </div>
-      </div>
-      
-      <!-- Clients Without Plan -->
-      <div class="bg-card rounded-xl border border-border">
-        <div class="p-4 lg:p-6 border-b border-border flex items-center justify-between">
-          <h2 class="font-semibold text-foreground">{{ t('trainer.dashboard.clientsWithoutPlan') }}</h2>
-          <RouterLink to="/trainer/clients" class="text-sm text-primary hover:underline">
-            {{ t('trainer.dashboard.viewAll') }}
-          </RouterLink>
-        </div>
-        <div class="divide-y divide-border">
-          <RouterLink
-            v-for="client in clientsWithoutPlan"
-            :key="client.id"
-            :to="`/trainer/clients/${client.id}`"
-            class="p-4 lg:px-6 flex items-center gap-3 hover:bg-muted/50 transition-colors"
-          >
-            <div class="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-              <span class="text-sm font-semibold text-foreground">{{ client.name?.charAt(0) ?? "" }}</span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-foreground truncate">{{ client.name }}</p>
-              <p class="text-xs text-muted-foreground">{{ client.goals || t('trainer.dashboard.noGoal') }}</p>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </RouterLink>
-          <div v-if="clientsWithoutPlan.length === 0" class="p-6 text-center text-muted-foreground">
-            {{ t('trainer.dashboard.allHavePlans') }}
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Quick Actions -->
-    <div class="bg-card rounded-xl border border-border p-4 lg:p-6">
-      <h2 class="font-semibold text-foreground mb-4">{{ t('trainer.dashboard.quickActions') }}</h2>
+    <!-- Loading skeleton -->
+    <template v-if="trainerStore.loading">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <RouterLink
-          to="/trainer/clients"
-          class="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
-          <span class="text-sm font-medium text-foreground text-center">{{ t('trainer.dashboard.newClient') }}</span>
-        </RouterLink>
-
-        <RouterLink
-          to="/trainer/plans/training/new"
-          class="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <span class="text-sm font-medium text-foreground text-center">{{ t('trainer.dashboard.trainingPlan') }}</span>
-        </RouterLink>
-
-        <RouterLink
-          to="/trainer/plans/nutrition/new"
-          class="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-chart-3/20 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-chart-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6M7 6v12M17 6v12M7 12h10" />
-            </svg>
-          </div>
-          <span class="text-sm font-medium text-foreground text-center">{{ t('trainer.dashboard.nutritionPlan') }}</span>
-        </RouterLink>
-
-        <RouterLink
-          to="/trainer/reports"
-          class="flex flex-col items-center gap-2 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-chart-4/20 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-chart-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
-          <span class="text-sm font-medium text-foreground text-center">{{ t('trainer.dashboard.viewReports') }}</span>
-        </RouterLink>
+        <div v-for="i in 4" :key="i" class="skeleton-card" />
       </div>
+      <div class="skeleton-banner" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div v-for="i in 6" :key="i" class="skeleton-client" />
+      </div>
+    </template>
+
+    <template v-else-if="trainerStore.stats">
+      <!-- Stats row -->
+      <TrainerStatsRow :stats="trainerStore.stats" />
+
+      <!-- Alerts banner -->
+      <AlertsBanner
+        v-if="trainerStore.alertedClients.length > 0"
+        :alerted-clients="trainerStore.alertedClients"
+      />
+
+      <!-- Filter / search bar -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
+          </svg>
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Buscar cliente..."
+            class="search-input"
+          />
+        </div>
+        <div class="filter-chips">
+          <button
+            v-for="f in filters"
+            :key="f.key"
+            :class="['filter-chip', activeFilter === f.key && 'filter-chip-active']"
+            @click="activeFilter = activeFilter === f.key ? 'all' : f.key"
+          >
+            {{ f.label }}
+            <span v-if="f.count > 0" class="chip-count">{{ f.count }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Client grid -->
+      <div v-if="filteredClients.length > 0" class="client-grid">
+        <ClientSummaryCard
+          v-for="client in filteredClients"
+          :key="client.id"
+          :client="client"
+          @quick-plan="openQuickPlan"
+        />
+      </div>
+      <div v-else class="empty-state">
+        <p class="text-muted-foreground text-sm">No se encontraron clientes</p>
+      </div>
+    </template>
+
+    <!-- Error / empty state -->
+    <div v-else class="empty-state">
+      <p class="text-muted-foreground text-sm">Sin datos. Intenta recargar.</p>
+      <button class="header-btn mt-4" @click="trainerStore.loadDashboard()">Recargar</button>
     </div>
+
+    <!-- Quick Plan Modal -->
+    <QuickPlanModal
+      v-if="quickPlanClient"
+      :client-id="quickPlanClient.id"
+      :client-name="quickPlanClient.name"
+      @close="quickPlanClient = null"
+      @assigned="onPlanAssigned"
+    />
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useTrainerStore } from '../../stores/trainer.store'
+import { useAuthStore } from '../../stores/auth'
+import TrainerStatsRow from '../../components/trainer/TrainerStatsRow.vue'
+import AlertsBanner from '../../components/trainer/AlertsBanner.vue'
+import ClientSummaryCard from '../../components/trainer/ClientSummaryCard.vue'
+import QuickPlanModal from './QuickPlanModal.vue'
+import type { DashboardClient } from '../../repo/trainerRepo'
+
+const trainerStore = useTrainerStore()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+
+const firstName = computed(() => user.value?.name?.split(' ')[0] ?? 'Entrenador')
+
+const today = computed(() => {
+  return new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+})
+
+// Filter / search
+const search = ref('')
+const activeFilter = ref<'all' | 'alerts' | 'active' | 'inactive'>('all')
+
+const filters = computed(() => {
+  const clients = trainerStore.clients
+  return [
+    {
+      key: 'alerts' as const,
+      label: 'Con alertas',
+      count: clients.filter((c) => c.alerts.length > 0).length,
+    },
+    {
+      key: 'active' as const,
+      label: 'Activos',
+      count: clients.filter((c) => c.weeklyWorkouts > 0).length,
+    },
+    {
+      key: 'inactive' as const,
+      label: 'Inactivos',
+      count: clients.filter((c) => c.weeklyWorkouts === 0).length,
+    },
+  ]
+})
+
+const filteredClients = computed(() => {
+  let list = trainerStore.clients
+
+  if (activeFilter.value === 'alerts') {
+    list = list.filter((c) => c.alerts.length > 0)
+  } else if (activeFilter.value === 'active') {
+    list = list.filter((c) => c.weeklyWorkouts > 0)
+  } else if (activeFilter.value === 'inactive') {
+    list = list.filter((c) => c.weeklyWorkouts === 0)
+  }
+
+  if (search.value.trim()) {
+    const q = search.value.trim().toLowerCase()
+    list = list.filter((c) => c.name.toLowerCase().includes(q))
+  }
+
+  return list
+})
+
+// Quick plan modal
+const quickPlanClient = ref<DashboardClient | null>(null)
+
+function openQuickPlan(clientId: string) {
+  quickPlanClient.value = trainerStore.clients.find((c) => c.id === clientId) ?? null
+}
+
+function onPlanAssigned(_tab: 'training' | 'nutrition') {
+  trainerStore.loadDashboard()
+}
+
+onMounted(() => {
+  trainerStore.loadDashboard()
+})
+</script>
+
+<style scoped>
+.dashboard-root {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 32px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dashboard-header h1 {
+  text-transform: capitalize;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.header-btn:hover { opacity: 0.85; }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.search-wrap {
+  position: relative;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  font-size: 14px;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--primary); }
+.search-input::placeholder { color: var(--muted-foreground); }
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-chip:hover { background: var(--muted); }
+.filter-chip-active {
+  border-color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+.chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.filter-chip-active .chip-count {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Grid */
+.client-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .client-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1280px) {
+  .client-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  border-radius: 16px;
+  border: 1px dashed var(--border);
+}
+
+/* Skeletons */
+.skeleton-card {
+  height: 110px;
+  border-radius: 16px;
+  background: var(--muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.skeleton-banner {
+  height: 52px;
+  border-radius: 14px;
+  background: var(--muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.skeleton-client {
+  height: 180px;
+  border-radius: 16px;
+  background: var(--muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+</style>

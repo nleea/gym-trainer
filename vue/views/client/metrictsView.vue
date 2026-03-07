@@ -361,7 +361,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="space-y-4 rounded-2xl border bg-card p-6 shadow-sm">
+  <div class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
     <!-- Header + tabs -->
     <div
       class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
@@ -374,7 +374,7 @@ onMounted(load);
       </div>
 
       <!-- Tabs para TRAINER -->
-      <div v-if="!isClient" class="flex flex-wrap gap-2">
+      <div v-if="!isClient" class="flex gap-2 overflow-x-auto pb-1 whitespace-nowrap">
         <button class="px-3 py-1.5 rounded-lg border" :class="activeTab === 'overview' ? 'font-semibold' : ''" @click="activeTab = 'overview'">
           {{ t('client.metrics.tabs.overview') }}
         </button>
@@ -393,7 +393,7 @@ onMounted(load);
       </div>
 
       <!-- Tabs para CLIENTE -->
-      <div v-else class="flex flex-wrap gap-2">
+      <div v-else class="flex gap-2 overflow-x-auto pb-1 whitespace-nowrap">
         <button class="px-3 py-1.5 rounded-lg border" :class="activeTab === 'overview' ? 'font-semibold' : ''" @click="activeTab = 'overview'">
           {{ t('client.metrics.tabs.overview') }}
         </button>
@@ -419,7 +419,7 @@ onMounted(load);
 
     <!-- ==================== RESUMEN ==================== -->
     <div v-if="activeTab === 'overview'" class="space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
 
         <!-- Peso -->
         <div class="p-4 rounded-xl border space-y-1">
@@ -813,8 +813,8 @@ onMounted(load);
         {{ t('client.metrics.history.noMetrics') }}
       </div>
 
-      <div v-else class="overflow-auto border rounded-xl">
-        <table class="w-full text-sm">
+      <div v-else class="overflow-x-auto border rounded-xl">
+        <table class="w-full min-w-[720px] text-sm">
           <thead class="bg-black/5">
             <tr>
               <th class="text-left p-2">{{ t('client.metrics.history.date') }}</th>

@@ -6,8 +6,8 @@ import { toDate } from './fireRepo'
 function mapPlan(d: any): NutritionPlan {
   return {
     ...d,
-    createdAt: toDate(d.createdAt) ?? new Date(),
-    updatedAt: toDate(d.updatedAt) ?? new Date(),
+    createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
+    updatedAt: toDate(d.updatedAt ?? d.updated_at) ?? new Date(),
   } as NutritionPlan
 }
 
@@ -20,6 +20,7 @@ export async function createNutritionPlan(_trainerId: string, data: NutritionPla
     target_protein: data.targetProtein,
     target_carbs: data.targetCarbs,
     target_fat: data.targetFat,
+    water_ml: (data as any).water_ml ?? (data as any).waterMl,
     recommended_foods: data.recommendedFoods ?? [],
     forbidden_foods: data.forbiddenFoods ?? [],
     guidelines: data.guidelines ?? [],
@@ -44,7 +45,18 @@ export async function getNutritionPlanById(id: string): Promise<NutritionPlan | 
 }
 
 export async function updateNutritionPlan(id: string, data: Partial<NutritionPlan>): Promise<void> {
-  await api.put(`/nutrition-plans/${id}`, data)
+  await api.put(`/nutrition-plans/${id}`, {
+    name: data.name,
+    days: data.days,
+    target_calories: data.targetCalories,
+    target_protein: data.targetProtein,
+    target_carbs: data.targetCarbs,
+    target_fat: data.targetFat,
+    fiber_g: (data as any).fiberG,
+    water_ml: (data as any).water_ml ?? (data as any).waterMl,
+    meals_per_day: (data as any).mealsPerDay,
+    notes: (data as any).notes,
+  })
 }
 
 export async function deleteNutritionPlan(id: string): Promise<void> {

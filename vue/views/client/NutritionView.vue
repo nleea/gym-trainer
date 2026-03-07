@@ -1,15 +1,15 @@
 <template>
-  <div class="space-y-5">
+  <div class="space-y-4 sm:space-y-5">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-foreground">{{ t('client.nutrition.title') }}</h1>
+        <h1 class="text-xl font-bold text-foreground sm:text-2xl">{{ t('client.nutrition.title') }}</h1>
         <p class="text-sm text-muted-foreground">
           {{ t('client.nutrition.subtitle') }}
         </p>
       </div>
       <!-- Date nav -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           @click="shiftDate(-1)"
@@ -179,7 +179,7 @@ const nutritionStore = useNutritionStore();
 const { user } = storeToRefs(authStore);
 const clientId = computed(() => user.value?.client_id ?? user.value?.uid ?? '');
 const nutritionPlanId = computed(
-  () => user.value?.nutriton_plan ?? user.value?.uid ?? '',
+  () => user.value?.nutriton_plan ?? '',
 );
 
 
@@ -309,13 +309,20 @@ const summary = computed(() =>
 
 async function loadData() {
   if (!clientId.value) return;
-  await Promise.all([
-    plansStore.fetchClientNutritionPlan(clientId.value, nutritionPlanId.value),
-    nutritionStore.loadSummary(clientId.value, selectedDate.value),
-  ]);
+  await plansStore.fetchClientNutritionPlan(clientId.value, nutritionPlanId.value);
 }
 
-watch([clientId, selectedDate], loadData, { immediate: true });
+async function loadSummaryByDate() {
+  if (!clientId.value) return;
+  await nutritionStore.loadSummary(clientId.value, selectedDate.value);
+}
+
+watch(clientId, async () => {
+  await loadData();
+  await loadSummaryByDate();
+}, { immediate: true });
+
+watch(selectedDate, loadSummaryByDate, { immediate: true });
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 const savingKey = ref<string | null>(null);

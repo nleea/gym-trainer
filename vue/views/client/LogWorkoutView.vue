@@ -509,7 +509,7 @@ const progressPct = computed(() =>
     class="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm"
   >
     <!-- Row 1: back · name · session timer · save -->
-    <div class="flex items-center gap-2 px-4 py-2.5">
+    <div class="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap sm:px-4">
       <button
         type="button"
         @click="cancelWorkout"
@@ -541,7 +541,7 @@ const progressPct = computed(() =>
 
       <!-- Session elapsed -->
       <span
-        class="shrink-0 tabular-nums font-mono text-sm text-muted-foreground px-2 py-1 rounded bg-muted/40"
+        class="order-3 tabular-nums rounded bg-muted/40 px-2 py-1 font-mono text-sm text-muted-foreground sm:order-none sm:shrink-0"
       >
         {{ sessionElapsed }}
       </span>
@@ -551,7 +551,7 @@ const progressPct = computed(() =>
         type="button"
         @click="saveWorkout"
         :disabled="!isValidWorkout || saving"
-        class="shrink-0 rounded-lg px-4 py-1.5 text-sm font-semibold transition-all"
+        class="order-2 ml-auto rounded-lg px-3 py-1.5 text-sm font-semibold transition-all sm:order-none sm:shrink-0 sm:px-4"
         :class="
           isValidWorkout && !saving
             ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95'
@@ -581,7 +581,7 @@ const progressPct = computed(() =>
     </div>
 
     <!-- Row 2: total volume + progress bar -->
-    <div class="flex items-center gap-4 px-4 pb-2.5">
+    <div class="flex items-center gap-3 px-3 pb-2.5 sm:gap-4 sm:px-4">
       <!-- Volume stat -->
       <div class="flex items-baseline gap-1 shrink-0">
         <span class="text-xl font-black tabular-nums text-primary leading-none">

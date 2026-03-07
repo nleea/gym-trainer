@@ -2,7 +2,8 @@
 import { defineStore } from "pinia"
 import type { Client, TrainingPlan, NutritionPlan } from "../types"
 import { createClient, listClients, updateClient, getClientById, getClientPlantraining, updateClientPlantraining, getClientNutritionPlan, updateClientNutritionPlan } from "../repo/clients"
-import { getTrainingPlanById } from "../repo/training";
+import { getTrainingPlanById } from "../repo/training"
+import { getNutritionPlanById } from "../repo/nutritionPlan"
 
 type Status = "idle" | "loading" | "error" | "success"
 
@@ -56,28 +57,27 @@ export const useClientsStore = defineStore("clients", {
     },
 
     async fetchPlanTrining(id: string) {
-      if (this.trainingPlan) {
-        return this.trainingPlan
+      const data = await getClientPlantraining(id);
+      if (data) {
+        this.trainingPlan = data
+        return data
       }
 
-      const data = await getTrainingPlanById(id);
-      if (!data) return
-      this.trainingPlan = data ?? null
-
-      return data
+      const fallback = await getTrainingPlanById(id)
+      this.trainingPlan = fallback ?? null
+      return fallback ?? null
     },
 
     async fetchNutritionPlan(id: string) {
-
-      if (this.nutritionplan) {
-        return this.nutritionplan
+      const data = await getClientNutritionPlan(id);
+      if (data) {
+        this.nutritionplan = data
+        return data
       }
 
-      const data = await getClientNutritionPlan(id);
-      if (!data) return
-      this.nutritionplan = data ?? null
-
-      return data
+      const fallback = await getNutritionPlanById(id)
+      this.nutritionplan = fallback ?? null
+      return fallback ?? null
     },
 
     async fetchClient(id: string) {

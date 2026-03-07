@@ -23,6 +23,7 @@ const plan = ref<Partial<NutritionPlan>>({
   targetProtein: undefined,
   targetCarbs: undefined,
   targetFat: undefined,
+  water_ml: 2000,
   days: [],
   recommendedFoods: [],
   forbiddenFoods: [],

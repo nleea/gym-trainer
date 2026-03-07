@@ -32,6 +32,7 @@ import ProgressView from '../views/client/ProgressView.vue'
 import ClientSettingsView from '../views/client/SettingsView.vue'
 import AppearanceSettings from '../views/settings/AppearanceSettings.vue'
 import MetrictsView from '../views/client/metrictsView.vue'
+import WeeklyCheckinView from '../views/client/WeeklyCheckinView.vue'
 
 
 type Role = 'trainer' | 'client'
@@ -89,7 +90,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'progress', name: 'progress', component: ProgressView, meta: { viewTheme: 'progress' } },
       { path: 'metricts', name: 'metricts', component: MetrictsView, meta: { viewTheme: 'metrics' } },
       { path: 'settings', name: 'client-settings', component: ClientSettingsView, meta: { viewTheme: 'settings' } },
-      { path: 'settings/appearance', name: 'client-appearance', component: AppearanceSettings, meta: { viewTheme: 'settings' } }
+      { path: 'settings/appearance', name: 'client-appearance', component: AppearanceSettings, meta: { viewTheme: 'settings' } },
+      { path: 'weekly-checkin', name: 'weekly-checkin', component: WeeklyCheckinView },
 
     ]
   },

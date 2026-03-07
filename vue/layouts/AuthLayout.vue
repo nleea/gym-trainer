@@ -44,7 +44,7 @@ import { RouterView } from 'vue-router'
     
     <!-- Right Panel - Form -->
     <div class="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
-      <div class="w-full max-w-md">
+      <div class="w-[90%] max-w-md">
         <!-- Mobile Logo -->
         <div class="lg:hidden flex items-center gap-3 mb-8 justify-center">
           <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">

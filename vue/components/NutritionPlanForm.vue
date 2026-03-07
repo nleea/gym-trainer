@@ -65,6 +65,7 @@ const defaultPlan = (): NutritionPlan => ({
   targetProtein: 0,
   targetCarbs: 0,
   targetFat: 0,
+  water_ml: 2000,
   recommendedFoods: [],
   forbiddenFoods: [],
   guidelines: [],
@@ -246,6 +247,7 @@ const handleSave = async () => {
       targetProtein: plan.value.targetProtein ?? undefined,
       targetCarbs: plan.value.targetCarbs ?? undefined,
       targetFat: plan.value.targetFat ?? undefined,
+      water_ml: plan.value.water_ml ?? undefined,
       recommendedFoods: plan.value.recommendedFoods,
       forbiddenFoods: plan.value.forbiddenFoods,
       guidelines: plan.value.guidelines as any,
@@ -253,7 +255,7 @@ const handleSave = async () => {
     };
 
     if (plan.value.id && clientId) {
-      await clientStore.updatePlanTraining(clientId, plan.value.id, payload);
+      await clientStore.updateNutritionPlan(clientId, plan.value.id, payload);
       emit('saved', { id: plan.value.id });
     } else {
       const newId = await dataStore.addnutritionPlan(payload);
@@ -312,6 +314,9 @@ function totalCalories(day: NutritionDay) {
         <span v-if="plan.targetFat" class="rounded-full bg-orange-500/10 px-2.5 py-1 text-orange-700 dark:text-orange-400">
           G: {{ plan.targetFat }}g
         </span>
+        <span v-if="plan.water_ml" class="rounded-full bg-cyan-500/10 px-2.5 py-1 text-cyan-700 dark:text-cyan-400">
+          Agua: {{ plan.water_ml }} ml
+        </span>
       </div>
 
       <!-- Save -->
@@ -351,7 +356,7 @@ function totalCalories(day: NutritionDay) {
         <!-- Macro targets -->
         <div>
           <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metas diarias</p>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <label class="group space-y-1">
               <span class="text-xs text-muted-foreground">Calorías (kcal)</span>
               <div class="flex items-center gap-1.5 rounded-xl border bg-primary/5 px-3 py-2 ring-0 focus-within:ring-1 focus-within:ring-primary transition">
@@ -381,6 +386,14 @@ function totalCalories(day: NutritionDay) {
               <div class="flex items-center gap-1.5 rounded-xl border bg-orange-500/5 px-3 py-2 focus-within:ring-1 focus-within:ring-orange-400 transition">
                 <span class="text-sm">🥑</span>
                 <input v-model.number="plan.targetFat" type="number" placeholder="70"
+                  class="w-full bg-transparent text-sm font-semibold text-foreground focus:outline-none" />
+              </div>
+            </label>
+            <label class="space-y-1">
+              <span class="text-xs text-muted-foreground">Agua (ml)</span>
+              <div class="flex items-center gap-1.5 rounded-xl border bg-cyan-500/5 px-3 py-2 focus-within:ring-1 focus-within:ring-cyan-400 transition">
+                <span class="text-sm">💧</span>
+                <input v-model.number="plan.water_ml" type="number" placeholder="2000"
                   class="w-full bg-transparent text-sm font-semibold text-foreground focus:outline-none" />
               </div>
             </label>

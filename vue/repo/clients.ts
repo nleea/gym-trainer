@@ -6,9 +6,25 @@ import { toDate } from './fireRepo'
 function mapClient(d: any): Client {
   return {
     ...d,
-    createdAt: toDate(d.createdAt) ?? new Date(),
-    startDate: toDate(d.startDate) ?? new Date(),
+    createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
+    startDate: toDate(d.startDate ?? d.start_date) ?? new Date(),
   } as Client
+}
+
+function mapTrainingPlan(d: any): TrainingPlan {
+  return {
+    ...d,
+    createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
+    updatedAt: toDate(d.updatedAt ?? d.updated_at) ?? new Date(),
+  } as TrainingPlan
+}
+
+function mapNutritionPlan(d: any): NutritionPlan {
+  return {
+    ...d,
+    createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
+    updatedAt: toDate(d.updatedAt ?? d.updated_at) ?? new Date(),
+  } as NutritionPlan
 }
 
 // CREATE
@@ -48,13 +64,11 @@ export async function deleteClient(clientId: string): Promise<void> {
 // Plan de entrenamiento activo del cliente
 export async function getClientPlantraining(clientId: string): Promise<TrainingPlan | null> {
   try {
-    const summary = await api.get<any>(`/clients/${clientId}/summary`)
-    if (!summary?.training_plan) return null
-    return {
-      ...summary.training_plan,
-      createdAt: toDate(summary.training_plan.createdAt) ?? new Date(),
-      updatedAt: toDate(summary.training_plan.updatedAt) ?? new Date(),
-    } as TrainingPlan
+    const client = await api.get<any>(`/clients/${clientId}`)
+    const planId = client?.plan_id
+    if (!planId) return null
+    const plan = await api.get<any>(`/training-plans/${planId}`)
+    return mapTrainingPlan(plan)
   } catch {
     return null
   }
@@ -63,13 +77,11 @@ export async function getClientPlantraining(clientId: string): Promise<TrainingP
 // Plan de nutrición activo del cliente
 export async function getClientNutritionPlan(clientId: string): Promise<NutritionPlan | null> {
   try {
-    const summary = await api.get<any>(`/clients/${clientId}/summary`)
-    if (!summary?.nutrition_plan) return null
-    return {
-      ...summary.nutrition_plan,
-      createdAt: toDate(summary.nutrition_plan.createdAt) ?? new Date(),
-      updatedAt: toDate(summary.nutrition_plan.updatedAt) ?? new Date(),
-    } as NutritionPlan
+    const client = await api.get<any>(`/clients/${clientId}`)
+    const nutritionPlanId = client?.nutrition_plan_id
+    if (!nutritionPlanId) return null
+    const plan = await api.get<any>(`/nutrition-plans/${nutritionPlanId}`)
+    return mapNutritionPlan(plan)
   } catch {
     return null
   }

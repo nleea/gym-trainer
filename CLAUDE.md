@@ -2,12 +2,11 @@
 
 ## Skills
 Before writing any code, read and apply these skills in order:
-- ~/.agents/skills/code-documentation-code-explain/SKILL.md
 - ~/.agents/skills/ui-ux-pro-max/SKILL.md
 - ~/.agents/skills/web-design-guidelines/SKILL.md
 - ~/.agents/skills/frontend-responsive-design-standards/SKILL.md
 - ~/.agents/skills/responsive-designs/SKILL.md
-- 
+- ~/.agents/skills/pinia
 
 ## Commands
 

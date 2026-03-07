@@ -126,12 +126,12 @@ const handleAddClient = async () => {
       startDate: new Date(),
     });
 
-    await authStore.register(newClient.value.email.trim(), newClient.value.cc, {
-      name: newClient.value.name.trim(),
-      role: 'client',
-      trainerId: userId.value,
-      clientId: created.id
-    });
+    // await authStore.register(newClient.value.email.trim(), newClient.value.cc, {
+    //   name: newClient.value.name.trim(),
+    //   role: 'client',
+    //   trainerId: userId.value,
+    //   clientId: created.id
+    // });
 
     // reset form
     newClient.value = {

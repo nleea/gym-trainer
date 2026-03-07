@@ -61,6 +61,7 @@ export const useDataStore = defineStore("data", {
   state: () => ({
     clients: [] as Client[],
     attendance: [] as Attendance[],
+    selectedClient: {} as Client,
 
     trainingPlans: [] as TrainingPlan[],
     nutritionPlans: [] as NutritionPlan[],
@@ -157,6 +158,9 @@ export const useDataStore = defineStore("data", {
 
   actions: {
 
+    setSelectedClient(client: Client){
+      this.selectedClient = client
+    },
 
     async loadToday(clientId: string) {
       this.mealLogs = await listMealLogsToday(clientId);
@@ -277,7 +281,7 @@ export const useDataStore = defineStore("data", {
         status: "active",
       }
 
-      await updateClient(clientId, { planId: planId })
+      await updateClient(clientId, { plan_id: planId })
       this.assignedTrainingPlans.push(assignment)
       return assignment
     },
@@ -289,7 +293,7 @@ export const useDataStore = defineStore("data", {
         }
 
         const client = this.getClient(clientId) || await getClientById(clientId)
-        const nutritionplanId = client?.nutritionplanId || ""
+        const nutritionplanId = client?.nutrition_plan_id || ""
 
         if (!nutritionplanId) {
           return null
@@ -317,7 +321,7 @@ export const useDataStore = defineStore("data", {
 
       try {
         const client = this.getClient(clientId) || await getClientById(clientId)
-        const planId = client?.planId || ""
+        const planId = client?.plan_id || ""
 
         if (!planId) {
           this.trainingPlanByClient[clientId] = null
@@ -358,7 +362,7 @@ export const useDataStore = defineStore("data", {
         endDate,
         status: "active",
       }
-      await updateClient(clientId, { nutritionplanId: planId });
+      await updateClient(clientId, { nutrition_plan_id: planId });
       this.assignedNutritionPlans.push(assignment)
       return assignment
     },

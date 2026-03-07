@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6 pb-8">
+  <div class="space-y-5 pb-8 sm:space-y-6">
     <!-- Hero header -->
-    <div class="rounded-2xl border bg-gradient-to-br from-primary/5 via-card to-card px-6 py-8">
+    <div class="rounded-2xl border bg-gradient-to-br from-primary/5 via-card to-card px-4 py-6 sm:px-6 sm:py-8">
       <p class="text-xs font-semibold uppercase tracking-widest text-primary">{{ t('client.progress.label') }}</p>
-      <h1 class="mt-1 text-3xl font-black text-foreground">{{ t('client.progress.title') }}</h1>
+      <h1 class="mt-1 text-2xl font-black text-foreground sm:text-3xl">{{ t('client.progress.title') }}</h1>
       <p class="mt-1 text-sm text-muted-foreground">{{ t('client.progress.subtitle') }}</p>
     </div>
 

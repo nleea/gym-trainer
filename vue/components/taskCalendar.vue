@@ -34,7 +34,10 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'open-day', date: Date): void
+  (
+    e: 'open-day',
+    payload: { date: Date; viewType: ViewType; taskType?: Task['type'] },
+  ): void
 }>()
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -158,12 +161,20 @@ const hasMealsData = computed(() => !!props.mealsForDate)
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
 function handleTaskClick(task: Task) {
-  if (task.isPlan) emit('open-day', new Date(task.date))
+  if (task.isPlan) {
+    emit('open-day', {
+      date: new Date(task.date),
+      viewType: viewType.value,
+      taskType: task.type,
+    })
+  }
   else task.done = !task.done
 }
 
 function handleDayClick(day: Date) {
-  if (props.dayStatus) emit('open-day', new Date(day))
+  if (props.dayStatus) {
+    emit('open-day', { date: new Date(day), viewType: viewType.value })
+  }
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────

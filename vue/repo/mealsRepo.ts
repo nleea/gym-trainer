@@ -11,6 +11,9 @@ function toISO(d: Date): string {
 function mapLog(d: any): MealLog {
   return {
     ...d,
+    clientId: d.clientId ?? d.client_id,
+    trainerId: d.trainerId ?? d.trainer_id,
+    mealKey: d.mealKey ?? d.meal_key,
     date: toDate(d.date) ?? new Date(),
   } as MealLog
 }

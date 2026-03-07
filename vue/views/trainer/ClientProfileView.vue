@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -24,14 +24,6 @@ const dataStore = useDataStore();
 
 const trainerId = computed(() => authStore.user?.uid ?? '');
 const clientId = computed(() => route.params.id as string);
-
-onMounted(async () => {
-  await Promise.all([
-    dataStore.loadAttendance(),
-    clientStore.fetchPlanTrining(clientId.value),
-    clientStore.fetchNutritionPlan(clientId.value),
-  ]);
-});
 
 const { getClientTrainingLogsCached, mealsLogsByWeekKey } =
   storeToRefs(logsStore);
@@ -108,17 +100,33 @@ const mealLogs = computed(() => {
 watch(
   () => clientId.value,
   async (id) => {
-    if (!id) return;
+    if (!id) return
 
-    await Promise.all([
-      dataStore.fetchClientTrainingPlan(id),
-      dataStore.fetchNutritionplan(id),
+    const client = await clientStore.fetchClient(id)
+    if (!client) return
+
+    const fetches = [
       logsStore.loadTrainingLogWeek(id),
       logsStore.loadMealsLogWeek(id),
-    ]);
+      dataStore.loadAttendance(),
+      clientStore.fetchPlanTrining(id),
+      clientStore.fetchNutritionPlan(id),
+    ]
+
+    await Promise.all(fetches)
   },
   { immediate: true },
-);
+)
+
+async function refreshAssignedPlans() {
+  const id = clientId.value
+  if (!id) return
+  await Promise.all([
+    clientStore.fetchClient(id),
+    clientStore.fetchPlanTrining(id),
+    clientStore.fetchNutritionPlan(id),
+  ])
+}
 
 const activeTab = ref<
   'overview' | 'attendance' | 'training' | 'nutrition' | 'diary' | 'progress'
@@ -917,6 +925,7 @@ const toggleStatus = () => {
     :open="showAssignModal"
     :client-id="clientId"
     :trainer-id="trainerId"
+    @assigned="refreshAssignedPlans"
     @close="showAssignModal = false"
   />
 
@@ -924,6 +933,7 @@ const toggleStatus = () => {
     :open="showAssignModalNutrition"
     :client-id="clientId"
     :trainer-id="trainerId"
+    @assigned="refreshAssignedPlans"
     @close="showAssignModalNutrition = false"
   />
 </template>
