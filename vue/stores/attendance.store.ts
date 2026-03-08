@@ -72,7 +72,20 @@ export const useAttendanceStore = defineStore("attendance", {
         existing.notes = notes
 
         try {
-          await updateAttendance(existing.id!, existing)
+          if (existing.id) {
+            await updateAttendance(existing.id, {
+              attended: existing.attended,
+              notes: existing.notes,
+            })
+          } else {
+            const createdId = await markAttendance({
+              clientId,
+              date: today,
+              attended,
+              notes: notes ?? "",
+            } as Attendance)
+            existing.id = createdId
+          }
         } catch (e) {
           Object.assign(existing, prev)
           throw e
@@ -90,7 +103,8 @@ export const useAttendanceStore = defineStore("attendance", {
       // optimista
       this.attendance.push(attendanceRecord)
       try {
-        await markAttendance(attendanceRecord)
+        const createdId = await markAttendance(attendanceRecord)
+        attendanceRecord.id = createdId
       } catch (e) {
         // rollback
         this.attendance = this.attendance.filter(a => a !== attendanceRecord)

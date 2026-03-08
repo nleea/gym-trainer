@@ -42,6 +42,13 @@
 
     <!-- Metrics (full width) — includes progress photos tab -->
     <ClientMetricsView :client-id="clientId" />
+
+    <!-- Monthly reports -->
+    <ClientReportsSection
+      v-if="clientId"
+      :client-id="clientId"
+      :client-name="user?.name ?? ''"
+    />
   </div>
 </template>
 
@@ -59,6 +66,7 @@ import ExerciseProgressList from '@/components/ExerciseProgressList.vue'
 import bodyEvolutionChart from '@/components/bodyEvolutionChart.vue'
 import WorkoutHistoryList from '@/components/WorkoutHistoryList.vue'
 import ClientMetricsView from './metrictsView.vue'
+import ClientReportsSection from '@/components/ClientReportsSection.vue'
 
 import { useAuthStore } from '../../stores/auth'
 import { useMetricsStore } from '../../stores/metrics.store'

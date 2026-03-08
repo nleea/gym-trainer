@@ -74,6 +74,24 @@ const getClientAttendanceToday = (clientId: string) => {
   return attendance?.attended ?? false;
 };
 
+const activeClients = computed(() =>
+  (clients.value ?? []).filter((c) => c.status === 'active'),
+);
+
+const getAttendanceStatus = (clientId: string): 'present' | 'absent' | 'pending' => {
+  const attendance = todayAttendance.value.find((a) => a.clientId === clientId);
+  if (!attendance) return 'pending';
+  return attendance.attended ? 'present' : 'absent';
+};
+
+const attendanceStats = computed(() => {
+  const total = activeClients.value.length;
+  const present = activeClients.value.filter((c) => getAttendanceStatus(c.id!) === 'present').length;
+  const absent = activeClients.value.filter((c) => getAttendanceStatus(c.id!) === 'absent').length;
+  const pending = Math.max(0, total - present - absent);
+  return { total, present, absent, pending };
+});
+
 /** ✅ filtros sin mutar store */
 const filteredClients = computed(() => {
   const list = (clients.value ?? []).slice();
@@ -456,101 +474,134 @@ const handleAddClient = async () => {
       class="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       <div
-        class="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
+        class="absolute inset-0 bg-black/45 backdrop-blur-sm"
         @click="showAttendanceModal = false"
       ></div>
       <div
-        class="relative bg-card rounded-xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto"
+        class="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
       >
-        <div class="p-6 border-b border-border">
-          <h2 class="text-lg font-semibold text-foreground">
-            Asistencia de hoy
-          </h2>
-          <p class="text-sm text-muted-foreground">
-            {{
-              new Date().toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })
-            }}
-          </p>
+        <div class="relative overflow-hidden border-b border-border p-6">
+          <div class="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-2xl"></div>
+          <div class="pointer-events-none absolute -bottom-12 left-8 h-32 w-32 rounded-full bg-emerald-400/10 blur-2xl"></div>
+
+          <div class="relative flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-2xl font-black tracking-tight text-foreground">Control de asistencia</h2>
+              <p class="mt-1 text-sm text-muted-foreground">
+                {{
+                  new Date().toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                }}
+              </p>
+            </div>
+            <button
+              @click="showAttendanceModal = false"
+              class="rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div class="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="rounded-xl border border-border bg-background p-3">
+              <p class="text-xs text-muted-foreground">Activos</p>
+              <p class="text-xl font-bold text-foreground">{{ attendanceStats.total }}</p>
+            </div>
+            <div class="rounded-xl border border-border bg-emerald-500/5 p-3">
+              <p class="text-xs text-muted-foreground">Presentes</p>
+              <p class="text-xl font-bold text-emerald-600">{{ attendanceStats.present }}</p>
+            </div>
+            <div class="rounded-xl border border-border bg-rose-500/5 p-3">
+              <p class="text-xs text-muted-foreground">Ausentes</p>
+              <p class="text-xl font-bold text-rose-600">{{ attendanceStats.absent }}</p>
+            </div>
+            <div class="rounded-xl border border-border bg-amber-500/5 p-3">
+              <p class="text-xs text-muted-foreground">Pendientes</p>
+              <p class="text-xl font-bold text-amber-600">{{ attendanceStats.pending }}</p>
+            </div>
+          </div>
         </div>
-        <div class="divide-y divide-border">
+
+        <div class="max-h-[58vh] overflow-y-auto divide-y divide-border">
           <div
-            v-for="client in clients.filter((c) => c.status === 'active')"
+            v-for="client in activeClients"
             :key="client.id"
-            class="p-4 flex items-center justify-between"
+            class="flex items-center justify-between gap-4 p-4"
           >
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 rounded-full bg-muted flex items-center justify-center"
+                class="flex h-11 w-11 items-center justify-center rounded-xl bg-muted"
               >
-                <span class="text-sm font-semibold text-foreground">{{
+                <span class="text-sm font-semibold text-foreground">
                   client.name?.charAt(0)
-                }}</span>
+                </span>
               </div>
-              <span class="font-medium text-foreground">{{ client.name }}</span>
+              <div>
+                <p class="font-semibold text-foreground">{{ client.name }}</p>
+                <p
+                  class="text-xs"
+                  :class="[
+                    getAttendanceStatus(client.id!) === 'present'
+                      ? 'text-emerald-600'
+                      : getAttendanceStatus(client.id!) === 'absent'
+                      ? 'text-rose-600'
+                      : 'text-amber-600',
+                  ]"
+                >
+                  {{
+                    getAttendanceStatus(client.id!) === 'present'
+                      ? 'Presente'
+                      : getAttendanceStatus(client.id!) === 'absent'
+                      ? 'Ausente'
+                      : 'Pendiente'
+                  }}
+                </p>
+              </div>
             </div>
             <div class="flex gap-2">
               <button
                 @click="toggleAttendance(client.id!, true)"
                 :class="[
-                  'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
-                  getClientAttendanceToday(client.id!) === true
-                    ? 'bg-primary text-primary-foreground'
+                  'rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
+                  getAttendanceStatus(client.id!) === 'present'
+                    ? 'bg-emerald-600 text-white'
                     : 'border border-border hover:bg-muted',
                 ]"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                Asistió
               </button>
               <button
                 @click="toggleAttendance(client.id!, false)"
                 :class="[
-                  'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
-                  getClientAttendanceToday(client.id!) === false
+                  'rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
+                  getAttendanceStatus(client.id!) === 'absent'
                     ? 'bg-destructive text-destructive-foreground'
                     : 'border border-border hover:bg-muted',
                 ]"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                Faltó
               </button>
             </div>
           </div>
+
+          <div
+            v-if="activeClients.length === 0"
+            class="p-8 text-center text-sm text-muted-foreground"
+          >
+            No hay clientes activos para marcar asistencia.
+          </div>
         </div>
-        <div class="p-4 border-t border-border">
+
+        <div class="border-t border-border p-4">
           <button
             @click="showAttendanceModal = false"
-            class="w-full px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-colors"
+            class="w-full rounded-xl bg-primary px-4 py-2.5 font-semibold text-primary-foreground hover:opacity-90 transition-colors"
           >
-            Cerrar
+            Guardar y cerrar
           </button>
         </div>
       </div>

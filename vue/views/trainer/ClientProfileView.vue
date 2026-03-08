@@ -16,6 +16,7 @@ import AssignTrainingPlanModal from '../../components/AssignTrainingPlanModal.vu
 import AssignNutritionPlanModal from '../../components/AssignNutritionPlanModal.vue';
 import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 import ClientDiaryTab from './ClientDiaryTab.vue'
+import ReportsTab from '../../components/ReportsTab.vue'
 
 const logsStore = useLogsStore();
 const authStore = useAuthStore();
@@ -145,7 +146,7 @@ async function refreshAssignedPlans() {
 }
 
 const activeTab = ref<
-  'overview' | 'attendance' | 'training' | 'nutrition' | 'diary' | 'progress' | 'photos'
+  'overview' | 'attendance' | 'training' | 'nutrition' | 'diary' | 'progress' | 'photos' | 'reports'
 >('overview');
 
 const unansweredEvidences = computed(
@@ -160,6 +161,7 @@ const tabs = computed(() => [
   { key: 'diary',       label: unansweredEvidences.value > 0 ? `Diario 📋 (${unansweredEvidences.value})` : 'Diario 📋' },
   { key: 'progress',    label: 'Progreso' },
   { key: 'photos',      label: 'Fotos' },
+  { key: 'reports',    label: 'Reports' },
 ]);
 
 const activePhotoType = ref<'progress' | 'nutrition' | 'training'>('progress')
@@ -183,77 +185,84 @@ const toggleStatus = () => {
     <p class="text-muted-foreground">Cargando cliente...</p>
   </div>
 
-  <div v-else-if="client" class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-start gap-4">
-      <button
-        @click="router.back()"
-        class="p-2 rounded-lg hover:bg-muted transition-colors"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </button>
+  <div
+    v-else-if="client"
+    class="mx-auto w-full max-w-6xl space-y-6 px-1 sm:px-2"
+  >
+    <!-- Hero -->
+    <div
+      class="relative overflow-hidden rounded-3xl border border-border bg-card p-5 sm:p-7"
+    >
+      <div class="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/10 blur-2xl"></div>
+      <div class="pointer-events-none absolute -bottom-14 left-8 h-36 w-36 rounded-full bg-emerald-400/10 blur-2xl"></div>
 
-      <div class="flex-1">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-14 h-14 rounded-full bg-muted flex items-center justify-center"
+      <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <button
+            @click="router.back()"
+            class="rounded-xl border border-border bg-background p-2.5 hover:bg-muted transition-colors"
           >
-            <span class="text-xl font-semibold text-foreground">{{
-              client.name?.charAt(0)
-            }}</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-semibold text-primary">
+            {{ client.name?.charAt(0) }}
           </div>
+
           <div>
-            <h1 class="text-xl font-bold text-foreground">{{ client.name }}</h1>
+            <h1 class="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+              {{ client.name }}
+            </h1>
             <p class="text-sm text-muted-foreground">{{ client.email }}</p>
           </div>
         </div>
-      </div>
 
-      <button
-        @click="toggleStatus"
-        :class="[
-          'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-          client.status === 'active'
-            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
-            : 'bg-primary/10 text-primary hover:bg-primary/20',
-        ]"
-      >
-        {{ client.status === 'active' ? 'Desactivar' : 'Activar' }}
-      </button>
+        <button
+          @click="toggleStatus"
+          :class="[
+            'rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors',
+            client.status === 'active'
+              ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+              : 'bg-primary/10 text-primary hover:bg-primary/20',
+          ]"
+        >
+          {{ client.status === 'active' ? 'Desactivar' : 'Activar' }}
+        </button>
+      </div>
     </div>
 
     <!-- Quick Stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-card rounded-xl p-4 border border-border">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="rounded-2xl border border-border bg-card p-4">
         <p class="text-sm text-muted-foreground">Asistencia semanal</p>
         <p class="text-2xl font-bold text-foreground">{{ attendanceRate }}%</p>
       </div>
-      <div class="bg-card rounded-xl p-4 border border-border">
+      <div class="rounded-2xl border border-border bg-card p-4">
         <p class="text-sm text-muted-foreground">Peso actual</p>
         <p class="text-2xl font-bold text-foreground">
           {{ client.weight || '-' }} kg
         </p>
       </div>
-      <div class="bg-card rounded-xl p-4 border border-border">
+      <div class="rounded-2xl border border-border bg-card p-4">
         <p class="text-sm text-muted-foreground">Altura</p>
         <p class="text-2xl font-bold text-foreground">
           {{ client.height || '-' }} cm
         </p>
       </div>
-      <div class="bg-card rounded-xl p-4 border border-border">
+      <div class="rounded-2xl border border-border bg-card p-4">
         <p class="text-sm text-muted-foreground">Edad</p>
         <p class="text-2xl font-bold text-foreground">
           {{ client.age || '-' }} años
@@ -262,17 +271,17 @@ const toggleStatus = () => {
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-border overflow-x-auto">
-      <div class="flex gap-1 min-w-max">
+    <div class="overflow-x-auto rounded-2xl border border-border bg-card px-2 py-1.5">
+      <div class="flex min-w-max gap-1">
         <button
           v-for="tab in tabs"
           :key="tab.key"
           @click="activeTab = tab.key as typeof activeTab"
           :class="[
-            'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+            'rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors',
             activeTab === tab.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground',
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           ]"
         >
           {{ tab.label }}
@@ -883,6 +892,11 @@ const toggleStatus = () => {
       <!-- Progress Tab -->
       <div v-if="activeTab === 'progress'" class="space-y-6">
         <ProgressTab :client-id="clientId" />
+      </div>
+
+      <!-- Reports Tab -->
+      <div v-if="activeTab === 'reports'" class="space-y-6">
+        <ReportsTab :client-id="clientId" :client-name="client.name ?? ''" />
       </div>
 
       <!-- Photos Tab -->

@@ -113,6 +113,8 @@ export interface ExerciseEvidence {
   exerciseName: string
   clientId: string
   trainerId: string
+  type?: string
+  date?: string
   clientNote?: string | null
   photoUrls: string[]
   submittedAt: Date
@@ -122,6 +124,18 @@ export interface ExerciseEvidence {
   respondedAt?: Date | null
   clientViewedAt?: Date | null
   createdAt: Date
+}
+
+export interface EvidenceDayGroup {
+  date: string
+  label: string
+  evidences: ExerciseEvidence[]
+}
+
+export interface WeeklyEvidencesResponse {
+  weekStart: string
+  weekEnd: string
+  days: EvidenceDayGroup[]
 }
 
 // Nutrition

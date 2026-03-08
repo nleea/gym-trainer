@@ -1,18 +1,21 @@
 import { api } from '../api'
-import type { ExerciseEvidence } from '../types'
+import type { ExerciseEvidence, WeeklyEvidencesResponse } from '../types'
 import { toDate } from './fireRepo'
 
 function mapEvidence(d: any): ExerciseEvidence {
+  const submittedAt = toDate(d.submitted_at ?? d.submittedAt) ?? new Date()
   return {
     id: d.id,
-    trainingLogId: d.training_log_id ?? d.trainingLogId,
-    exerciseId: d.exercise_id ?? d.exerciseId,
-    exerciseName: d.exercise_name ?? d.exerciseName,
+    trainingLogId: d.training_log_id ?? d.trainingLogId ?? '',
+    exerciseId: d.exercise_id ?? d.exerciseId ?? '',
+    exerciseName: d.exercise_name ?? d.exerciseName ?? '',
     clientId: d.client_id ?? d.clientId,
     trainerId: d.trainer_id ?? d.trainerId,
+    type: d.type ?? undefined,
+    date: d.date ?? submittedAt.toISOString().slice(0, 10),
     clientNote: d.client_note ?? d.clientNote ?? null,
     photoUrls: d.photo_urls ?? d.photoUrls ?? [],
-    submittedAt: toDate(d.submitted_at ?? d.submittedAt) ?? new Date(),
+    submittedAt,
     trainerFeedback: d.trainer_feedback ?? d.trainerFeedback ?? null,
     trainerRating: d.trainer_rating ?? d.trainerRating ?? null,
     trainerPhotoUrls: d.trainer_photo_urls ?? d.trainerPhotoUrls ?? [],
@@ -40,8 +43,16 @@ export async function createEvidence(data: {
 }
 
 export async function listEvidencesByLog(trainingLogId: string): Promise<ExerciseEvidence[]> {
-  const list = await api.get<any[]>(`/exercise-evidences?training_log_id=${trainingLogId}`)
-  return list.map(mapEvidence)
+  const currentUserRaw = localStorage.getItem('auth_user')
+  const currentUser = currentUserRaw ? JSON.parse(currentUserRaw) : null
+  const clientId = currentUser?.client_id
+  if (!clientId) return []
+
+  const raw = await api.get<any>(
+    `/evidences?client_id=${clientId}&type=exercise&training_log_id=${trainingLogId}`,
+  )
+  const items = (raw?.days ?? []).flatMap((day: any) => day?.evidences ?? [])
+  return items.map(mapEvidence)
 }
 
 export async function listEvidencesByClient(
@@ -49,20 +60,63 @@ export async function listEvidencesByClient(
   limit = 20,
   offset = 0,
 ): Promise<ExerciseEvidence[]> {
-  const list = await api.get<any[]>(
-    `/exercise-evidences?client_id=${clientId}&limit=${limit}&offset=${offset}`,
+  const raw = await api.get<any>(
+    `/evidences?client_id=${clientId}&type=exercise&limit=${limit}&offset=${offset}`,
   )
-  return list.map(mapEvidence)
+  const items = (raw?.days ?? []).flatMap((day: any) => day?.evidences ?? [])
+  return items.map(mapEvidence)
 }
 
-export async function getEvidenceById(evidenceId: string): Promise<ExerciseEvidence> {
-  const d = await api.get<any>(`/exercise-evidences/${evidenceId}`)
-  return mapEvidence(d)
+export async function listEvidencesByClientWeek(params: {
+  clientId: string
+  type?: string
+  weekStart?: string
+  weekEnd?: string
+  limit?: number
+  offset?: number
+}): Promise<WeeklyEvidencesResponse> {
+  const query = new URLSearchParams()
+  query.set('client_id', params.clientId)
+  if (params.type) query.set('type', params.type)
+  if (params.weekStart) query.set('week_start', params.weekStart)
+  if (params.weekEnd) query.set('week_end', params.weekEnd)
+  if (typeof params.limit === 'number') query.set('limit', String(params.limit))
+  if (typeof params.offset === 'number') query.set('offset', String(params.offset))
+
+  const raw = await api.get<any>(`/evidences?${query.toString()}`)
+
+  const days = (raw?.days ?? []).map((day: any) => ({
+    date: day.date,
+    label: day.label,
+    evidences: (day.evidences ?? []).map(mapEvidence),
+  }))
+
+  return {
+    weekStart: raw?.week_start ?? raw?.weekStart ?? params.weekStart ?? '',
+    weekEnd: raw?.week_end ?? raw?.weekEnd ?? params.weekEnd ?? '',
+    days,
+  }
+}
+
+export async function createNutritionEvidence(data: {
+  takenAt: string
+  photo: File
+  note?: string
+  mealName?: string
+}): Promise<ExerciseEvidence> {
+  const form = new FormData()
+  form.append('taken_at', data.takenAt)
+  form.append('photo', data.photo)
+  if (data.note) form.append('note', data.note)
+  if (data.mealName) form.append('meal_name', data.mealName)
+  const res = await api.postForm<any>('/evidences/nutrition', form)
+  return mapEvidence(res)
 }
 
 export async function submitEvidenceFeedback(
   evidenceId: string,
   data: {
+    evidenceType?: string
     trainerFeedback?: string
     trainerRating?: 'correct' | 'improve'
     photos?: File[]
@@ -76,7 +130,10 @@ export async function submitEvidenceFeedback(
     form.append('trainer_photo_urls', data.trainerPhotoUrls.join(','))
   }
   for (const f of data.photos ?? []) form.append('photos', f)
-  const res = await api.putForm<any>(`/exercise-evidences/${evidenceId}/feedback`, form)
+  const endpoint = data.evidenceType === 'nutrition'
+    ? `/evidences/nutrition/${evidenceId}/feedback`
+    : `/exercise-evidences/${evidenceId}/feedback`
+  const res = await api.putForm<any>(endpoint, form)
   return mapEvidence(res)
 }
 

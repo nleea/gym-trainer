@@ -66,6 +66,32 @@
       <!-- Notes from plan -->
       <p v-if="meal.notes" class="text-xs text-muted-foreground italic">{{ meal.notes }}</p>
 
+      <!-- Evidence photo -->
+      <div class="space-y-2 rounded-xl border bg-muted/20 p-3">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs font-semibold text-foreground">Foto de evidencia</p>
+          <button
+            v-if="selectedPhotoName"
+            type="button"
+            class="text-xs text-muted-foreground hover:text-foreground"
+            @click="clearPhoto"
+          >
+            Quitar
+          </button>
+        </div>
+        <label class="inline-flex cursor-pointer items-center rounded-lg border px-3 py-2 text-sm hover:bg-muted/40">
+          {{ selectedPhotoName ? 'Cambiar foto' : 'Subir foto' }}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            class="hidden"
+            @change="onPickPhoto"
+          />
+        </label>
+        <p v-if="selectedPhotoName" class="text-xs text-muted-foreground truncate">{{ selectedPhotoName }}</p>
+        <p v-if="photoError" class="text-xs text-rose-500">{{ photoError }}</p>
+      </div>
+
       <!-- Custom macros form (when editing) -->
       <div v-if="editing" class="space-y-3 rounded-xl border bg-muted/20 p-3">
         <p class="text-xs font-semibold text-foreground">Registrar macros reales</p>
@@ -148,13 +174,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'register-plan', mealKey: string): void
-  (e: 'register-custom', mealKey: string, data: { calories?: number; protein?: number; carbs?: number; fat?: number }): void
+  (e: 'register-plan', payload: { mealKey: string; photo?: File }): void
+  (e: 'register-custom', payload: { mealKey: string; data: { calories?: number; protein?: number; carbs?: number; fat?: number }; photo?: File }): void
   (e: 'delete', logId: string): void
 }>()
 
 const open = ref(false)
 const editing = ref(false)
+const selectedPhoto = ref<File | null>(null)
+const selectedPhotoName = ref('')
+const photoError = ref('')
 
 const MEAL_ICONS: Record<string, string> = {
   desayuno: '🌅',
@@ -178,15 +207,34 @@ const form = reactive({
 })
 
 function registerPlan() {
-  emit('register-plan', props.mealKey)
+  photoError.value = ''
+  emit('register-plan', { mealKey: props.mealKey, photo: selectedPhoto.value ?? undefined })
 }
 
 function submitCustom() {
-  emit('register-custom', props.mealKey, { ...form })
+  photoError.value = ''
+  emit('register-custom', {
+    mealKey: props.mealKey,
+    data: { ...form },
+    photo: selectedPhoto.value ?? undefined,
+  })
   editing.value = false
 }
 
 function removeLog() {
   if (logEntry.value) emit('delete', logEntry.value.id)
+}
+
+function onPickPhoto(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0] ?? null
+  if (!file) return
+  selectedPhoto.value = file
+  selectedPhotoName.value = file.name
+  photoError.value = ''
+}
+
+function clearPhoto() {
+  selectedPhoto.value = null
+  selectedPhotoName.value = ''
 }
 </script>

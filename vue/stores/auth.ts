@@ -35,7 +35,7 @@ type LoginResponse = {
 
 // Añade aliases de compatibilidad con las vistas que usaban Firebase User
 function withAliases(u: AuthUser): AuthUser {
-  return { ...u, uid: u.id, client_id: u.client_id ?? u.id }
+  return { ...u, uid: u.id, client_id: u.client_id ?? u.clientid }
 }
 
 export const useAuthStore = defineStore('auth', () => {

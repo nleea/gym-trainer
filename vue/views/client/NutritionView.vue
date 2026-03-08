@@ -157,13 +157,29 @@
       </template>
     </template>
 
-    <!-- Nutrition photos -->
-    <PhotoTimeline
-      v-if="clientId"
-      :client-id="clientId"
-      type="nutrition"
-      :can-upload="true"
-    />
+    <section v-if="clientId" class="space-y-4 rounded-2xl border bg-card p-4 shadow-sm">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-semibold text-foreground">Food Evidence</h2>
+        <p class="text-sm text-muted-foreground">{{ evidenceWeekLabel }}</p>
+      </div>
+
+      <div v-if="clientEvidenceDays.length === 0" class="rounded-xl border border-dashed border-border bg-background p-5 text-sm text-muted-foreground">
+        No food evidence this week
+      </div>
+
+      <div v-else class="space-y-5">
+        <section v-for="day in clientEvidenceDays" :key="day.date" class="space-y-3">
+          <h3 class="text-sm font-semibold text-foreground">{{ day.labelWithDate }}</h3>
+          <div class="space-y-3">
+            <EvidenceThreadCard
+              v-for="ev in day.evidences"
+              :key="ev.id"
+              :evidence="ev"
+            />
+          </div>
+        </section>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -173,25 +189,29 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../../stores/auth';
 import { usePlansStore } from '../../stores/plan.store';
 import { useNutritionStore } from '../../stores/nutrition.store';
+import { useEvidencesStore } from '../../stores/evidences.store';
 import { useI18n } from 'vue-i18n';
+import { endOfWeek, format, startOfWeek } from 'date-fns';
+import { useAppToast } from '@/composables/useAppToast';
+import { createNutritionEvidence } from '../../repo/evidencesRepo';
 const { t } = useI18n();
 import MacroRingsCard from '../../components/MacroRingsCard.vue';
 import WaterTracker from '../../components/WaterTracker.vue';
 import MealCard from '../../components/MealCard.vue';
 import NutritionAdherenceChart from '../../components/NutritionAdherenceChart.vue';
-import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
+import EvidenceThreadCard from '../../components/EvidenceThreadCard.vue';
 
 const authStore = useAuthStore();
 const plansStore = usePlansStore();
 const nutritionStore = useNutritionStore();
+const evidencesStore = useEvidencesStore();
+const toast = useAppToast();
 
 const { user } = storeToRefs(authStore);
-const clientId = computed(() => user.value?.client_id ?? user.value?.uid ?? '');
+const clientId = computed(() => user.value?.client_id ?? '');
 const nutritionPlanId = computed(
   () => user.value?.nutriton_plan ?? '',
 );
-
-
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 type DayKey =
@@ -228,15 +248,16 @@ function jsDateToDayKey(d: Date): DayKey {
   return DAY_KEY_MAP[d.getDay()];
 }
 
-// Obtiene la fecha de ese día en la semana actual
-function dayKeyToDate(key: DayKey): Date {
+// Obtiene la fecha de ese día en la semana de la fecha de referencia
+function dayKeyToDate(key: DayKey, referenceDate: Date): Date {
   const target = DAY_INDEX[key];
-  const today = todayDate();
+  const base = new Date(referenceDate);
+  base.setHours(0, 0, 0, 0);
 
-  const currentDay = today.getDay();
+  const currentDay = base.getDay();
   const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + mondayOffset);
+  const monday = new Date(base);
+  monday.setDate(base.getDate() + mondayOffset);
 
 
   const offset = target === 0 ? 6 : target - 1;
@@ -247,6 +268,29 @@ function dayKeyToDate(key: DayKey): Date {
 
 // ── Date navigation ───────────────────────────────────────────────────────────
 const selectedDate = ref(todayDate());
+
+const evidenceWeekStart = computed(() =>
+  format(startOfWeek(selectedDate.value, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+);
+const evidenceWeekEnd = computed(() =>
+  format(endOfWeek(selectedDate.value, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+);
+const evidenceWeekLabel = computed(() => {
+  const start = startOfWeek(selectedDate.value, { weekStartsOn: 1 });
+  const end = endOfWeek(selectedDate.value, { weekStartsOn: 1 });
+  return `${format(start, 'MMMM d')} - ${format(end, 'd, yyyy')}`;
+});
+const evidenceWeekKey = computed(
+  () => `${clientId.value}:nutrition:${evidenceWeekStart.value}:${evidenceWeekEnd.value}`,
+);
+const clientEvidenceDays = computed(() => {
+  const week = evidencesStore.getClientEvidencesByWeek(evidenceWeekKey.value);
+  if (!week) return [];
+  return week.days.map((day) => ({
+    ...day,
+    labelWithDate: `${day.label}, ${format(new Date(`${day.date}T00:00:00`), 'MMMM d')}`,
+  }));
+});
 
 const isToday = computed(
   () => selectedDate.value.toDateString() === todayDate().toDateString(),
@@ -278,7 +322,7 @@ watch(selectedDate, (d) => {
 });
 
 watch(selectedDay, (day) => {
-  const date = dayKeyToDate(day);
+  const date = dayKeyToDate(day, selectedDate.value);
   if (date.toDateString() !== selectedDate.value.toDateString()) {
     selectedDate.value = date;
   }
@@ -326,29 +370,59 @@ async function loadSummaryByDate() {
   await nutritionStore.loadSummary(clientId.value, selectedDate.value);
 }
 
+async function loadEvidenceWeek() {
+  if (!clientId.value) return;
+  try {
+    await evidencesStore.loadClientEvidencesByWeek({
+      clientId: clientId.value,
+      type: 'nutrition',
+      weekStart: evidenceWeekStart.value,
+      weekEnd: evidenceWeekEnd.value,
+    });
+  } catch (e) {
+    console.warn('No se pudo cargar evidencia semanal de nutricion:', e);
+    evidencesStore.clientEvidencesByWeek[evidenceWeekKey.value] = {
+      weekStart: evidenceWeekStart.value,
+      weekEnd: evidenceWeekEnd.value,
+      days: [],
+    };
+  }
+}
+
 watch(clientId, async () => {
   await loadData();
   await loadSummaryByDate();
+  await loadEvidenceWeek();
 }, { immediate: true });
 
 watch(selectedDate, loadSummaryByDate, { immediate: true });
+watch(selectedDate, loadEvidenceWeek, { immediate: true });
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 const savingKey = ref<string | null>(null);
 
-async function onRegisterPlan(key: string) {
+async function uploadMealEvidence(photo: File, mealName?: string) {
+  await createNutritionEvidence({
+    takenAt: selectedDate.value.toISOString().slice(0, 10),
+    photo,
+    mealName,
+  });
+  await loadEvidenceWeek();
+}
+
+async function onRegisterPlan(payload: { mealKey: string; photo?: File }) {
   if (!clientId.value) return;
-  const idx = parseInt(key.split('_').at(-1) ?? '0');
+  const idx = parseInt(payload.mealKey.split('_').at(-1) ?? '0');
   const meal = todayMeals.value[idx];
   if (!meal) return;
 
-  savingKey.value = key;
+  savingKey.value = payload.mealKey;
   try {
     await nutritionStore.upsertLog(clientId.value, selectedDate.value, {
       date: selectedDate.value.toISOString().slice(0, 10),
       type: meal.type ?? 'snack',
       meal_name: meal.name,
-      meal_key: key,
+      meal_key: payload.mealKey,
       calories: meal.calories,
       protein: meal.protein,
       carbs: meal.carbs,
@@ -356,29 +430,44 @@ async function onRegisterPlan(key: string) {
       foods: meal.foods ?? null,
       notes: meal.notes ?? null,
     });
+    if (payload.photo) {
+      await uploadMealEvidence(payload.photo, meal.name);
+    }
+    toast.success(payload.photo ? 'Comida y evidencia registradas' : 'Comida registrada');
+  } catch (e: any) {
+    toast.error(e?.message ?? 'No se pudo registrar la comida');
   } finally {
     savingKey.value = null;
   }
 }
 
 async function onRegisterCustom(
-  key: string,
-  data: { calories?: number; protein?: number; carbs?: number; fat?: number },
+  payload: {
+    mealKey: string;
+    data: { calories?: number; protein?: number; carbs?: number; fat?: number };
+    photo?: File;
+  },
 ) {
   if (!clientId.value) return;
-  const idx = parseInt(key.split('_').at(-1) ?? '0');
+  const idx = parseInt(payload.mealKey.split('_').at(-1) ?? '0');
   const meal = todayMeals.value[idx];
   if (!meal) return;
 
-  savingKey.value = key;
+  savingKey.value = payload.mealKey;
   try {
     await nutritionStore.upsertLog(clientId.value, selectedDate.value, {
       date: selectedDate.value.toISOString().slice(0, 10),
       type: meal.type ?? 'snack',
       meal_name: meal.name,
-      meal_key: key,
-      ...data,
+      meal_key: payload.mealKey,
+      ...payload.data,
     });
+    if (payload.photo) {
+      await uploadMealEvidence(payload.photo, meal.name);
+    }
+    toast.success(payload.photo ? 'Comida y evidencia registradas' : 'Comida registrada');
+  } catch (e: any) {
+    toast.error(e?.message ?? 'No se pudo registrar la comida');
   } finally {
     savingKey.value = null;
   }

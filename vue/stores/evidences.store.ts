@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import type { ExerciseEvidence } from '../types'
+import type { ExerciseEvidence, WeeklyEvidencesResponse } from '../types'
 import {
   createEvidence,
   getEvidencePendingCount,
   listEvidencesByClient,
+  listEvidencesByClientWeek,
   listEvidencesByLog,
   markEvidenceAsViewed,
   submitEvidenceFeedback,
@@ -13,6 +14,7 @@ export const useEvidencesStore = defineStore('evidences', {
   state: () => ({
     evidencesByLog: {} as Record<string, ExerciseEvidence[]>,
     clientEvidences: {} as Record<string, ExerciseEvidence[]>,
+    clientEvidencesByWeek: {} as Record<string, WeeklyEvidencesResponse>,
     loading: false,
     pendingByClient: {} as Record<string, { unanswered: number; unviewed_responded: number }>,
   }),
@@ -20,6 +22,7 @@ export const useEvidencesStore = defineStore('evidences', {
   getters: {
     getLogEvidences: (s) => (logId: string) => s.evidencesByLog[logId] ?? [],
     getClientEvidences: (s) => (clientId: string) => s.clientEvidences[clientId] ?? [],
+    getClientEvidencesByWeek: (s) => (key: string) => s.clientEvidencesByWeek[key] ?? null,
     getEvidenceByLogExercise: (s) => (logId: string, exerciseId: string) =>
       (s.evidencesByLog[logId] ?? []).find((e) => e.exerciseId === exerciseId) ?? null,
     getPendingForClient: (s) => (clientId: string) =>
@@ -52,6 +55,39 @@ export const useEvidencesStore = defineStore('evidences', {
       }
     },
 
+    async loadClientEvidencesByWeek(params: {
+      clientId: string
+      type?: string
+      weekStart: string
+      weekEnd: string
+      limit?: number
+      offset?: number
+    }) {
+      if (!params.clientId) return null
+      const key = `${params.clientId}:${params.type ?? 'all'}:${params.weekStart}:${params.weekEnd}`
+      this.loading = true
+      try {
+        const week = await listEvidencesByClientWeek(params)
+        this.clientEvidencesByWeek[key] = week
+        return week
+      } catch (e: any) {
+        const msg = String(e?.message ?? '').toLowerCase()
+        const isNotFound = msg.includes('404') || msg.includes('not found') || msg.includes('no encontrado')
+        if (isNotFound) {
+          const empty = {
+            weekStart: params.weekStart,
+            weekEnd: params.weekEnd,
+            days: [],
+          }
+          this.clientEvidencesByWeek[key] = empty
+          return empty
+        }
+        throw e
+      } finally {
+        this.loading = false
+      }
+    },
+
     async submitEvidence(data: {
       trainingLogId: string
       exerciseId: string
@@ -69,6 +105,7 @@ export const useEvidencesStore = defineStore('evidences', {
     async submitFeedback(
       evidenceId: string,
       data: {
+        evidenceType?: string
         trainerFeedback?: string
         trainerRating?: 'correct' | 'improve'
         photos?: File[]
@@ -76,12 +113,21 @@ export const useEvidencesStore = defineStore('evidences', {
     ) {
       const updated = await submitEvidenceFeedback(evidenceId, data)
       const logId = updated.trainingLogId
-      this.evidencesByLog[logId] = (this.evidencesByLog[logId] ?? []).map((e) =>
-        e.id === updated.id ? updated : e,
-      )
+      if (logId) {
+        this.evidencesByLog[logId] = (this.evidencesByLog[logId] ?? []).map((e) =>
+          e.id === updated.id ? updated : e,
+        )
+      }
       this.clientEvidences[updated.clientId] = (this.clientEvidences[updated.clientId] ?? []).map((e) =>
         e.id === updated.id ? updated : e,
       )
+      for (const key of Object.keys(this.clientEvidencesByWeek)) {
+        const bucket = this.clientEvidencesByWeek[key]
+        bucket.days = bucket.days.map((day) => ({
+          ...day,
+          evidences: day.evidences.map((e) => (e.id === updated.id ? updated : e)),
+        }))
+      }
       return updated
     },
 

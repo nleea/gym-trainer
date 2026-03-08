@@ -214,16 +214,35 @@ export const useDataStore = defineStore("data", {
       updateClient(id, updates)
     },
 
-    markAttendance(clientId: string, attended: boolean, notes?: string) {
+    async markAttendance(clientId: string, attended: boolean, notes?: string) {
       const today = new Date()
       const existing = this.attendance.find(
         a => a.clientId === clientId && new Date(a.date as any).toDateString() === today.toDateString()
       )
 
       if (existing) {
+        const prev = { ...existing }
         existing.attended = attended
         existing.notes = notes
-        updateAttendance(existing.id!, existing)
+        try {
+          if (existing.id) {
+            await updateAttendance(existing.id, {
+              attended: existing.attended,
+              notes: existing.notes,
+            })
+          } else {
+            const createdId = await markAttendance({
+              clientId,
+              date: today,
+              attended,
+              notes: notes ?? "",
+            } as Attendance)
+            existing.id = createdId
+          }
+        } catch (e) {
+          Object.assign(existing, prev)
+          throw e
+        }
       } else {
         const attendanceRecord: Attendance = {
           clientId,
@@ -232,7 +251,13 @@ export const useDataStore = defineStore("data", {
           notes: notes ?? "",
         }
         this.attendance.push(attendanceRecord)
-        markAttendance(attendanceRecord)
+        try {
+          const createdId = await markAttendance(attendanceRecord)
+          attendanceRecord.id = createdId
+        } catch (e) {
+          this.attendance = this.attendance.filter(a => a !== attendanceRecord)
+          throw e
+        }
       }
     },
 
