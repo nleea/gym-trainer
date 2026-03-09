@@ -2,9 +2,10 @@
 import { api } from '../api'
 import type { Attendance } from '../types'
 import { toDate } from './fireRepo'
+import { toYmdLocal } from '../../lib/utils'
 
 function toISO(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return toYmdLocal(d)
 }
 
 function mapAttendance(d: any): Attendance {

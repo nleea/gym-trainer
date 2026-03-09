@@ -23,7 +23,7 @@ import {
   listProgressByClient,
 } from "../repo/progressEntry"
 
-import { getWeekRange, parseYmdLocal } from "../../lib/utils"
+import { getWeekRange, parseYmdLocal, toYmdLocal } from "../../lib/utils"
 
 /** ---------- helpers ---------- */
 function toJsDate(d: any): Date {
@@ -32,13 +32,8 @@ function toJsDate(d: any): Date {
   if (typeof d?.toDate === "function") return d.toDate()
   return new Date(d)
 }
-function startOfDay(d: Date) {
-  const x = new Date(d)
-  x.setHours(0, 0, 0, 0)
-  return x
-}
 function ymd(d: Date) {
-  return startOfDay(d).toISOString().slice(0, 10)
+  return toYmdLocal(d)
 }
 
 /** cache key por semana (domingo->sábado o lo que use getWeekRange) */

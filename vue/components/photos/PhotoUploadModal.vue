@@ -154,6 +154,7 @@
 import { ref, computed } from 'vue'
 import { usePhotoStore } from '../../stores/photo.store'
 import type { Photo, PhotoType } from '../../types/photo.types'
+import { toYmdLocal } from '../../../lib/utils'
 
 const props = defineProps<{
   modelValue: boolean
@@ -174,7 +175,7 @@ const fileError   = ref<string | null>(null)
 const uploadError = ref<string | null>(null)
 const uploading   = ref(false)
 const notes       = ref('')
-const takenAt     = ref(new Date().toISOString().slice(0, 10))
+const takenAt     = ref(toYmdLocal(new Date()))
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 10 * 1024 * 1024

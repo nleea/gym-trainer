@@ -29,10 +29,7 @@ import {
   isPastLocalDay,
   isSameLocalDay,
 } from '../../../lib/utils';
-import {
-  appNow,
-  getActiveWeekIndexFromAssignedAt,
-} from '../../../lib/helpers';
+import { getActiveWeekIndexFromAssignedAt } from '../../../lib/helpers';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -54,7 +51,7 @@ const trainerId = computed(
   () => user.value?.trainerId || user.value?.uid || '',
 );
 
-const workoutDate = ref(new Date().toISOString().split('T')[0]);
+const workoutDate = ref(toLocalYmd(new Date()));
 const workoutName = ref('');
 const workoutDuration = ref(0);
 const notes = ref('');
@@ -101,18 +98,6 @@ const weekDaysUi = [
   'viernes',
   'sabado',
 ] as const;
-type WeekDayUi = (typeof weekDaysUi)[number];
-
-const CUTOFF_HOUR = 21;
-
-const clock = ref(Date.now());
-let t: any;
-
-onMounted(() => {
-  t = setInterval(() => (clock.value = Date.now()), 60_000);
-});
-
-onUnmounted(() => clearInterval(t));
 
 // ── Display-only: session elapsed timer ────────────────────────────────────
 const sessionStart = ref(Date.now());
@@ -132,29 +117,16 @@ const sessionElapsed = computed(() => {
 /** ---------- day key from SELECTED date (important) ---------- */
 const dayKeyForSelectedDate = computed(() => {
   const d = parseYmdLocal(workoutDate.value);
-  const map = [
-    'domingo',
-    'lunes',
-    'martes',
-    'miercoles',
-    'jueves',
-    'viernes',
-    'sabado',
-  ] as const;
-  return map[d.getDay()];
+  return weekDaysUi[d.getDay()];
 });
 
 /** ---------- helpers ---------- */
 
-function dayDateFromUi(dayUi: WeekDayUi) {
-  const base = appNow({ cutoffHour: CUTOFF_HOUR, now: new Date(clock.value) }); // ✅
-  const currentIdx = weekDaysUi.indexOf(dayKeyForSelectedDate.value);
-  const targetIdx = weekDaysUi.indexOf(dayUi);
-  const diff = targetIdx - currentIdx;
-
-  const d = new Date(base);
-  d.setDate(base.getDate() + diff);
-  return d;
+function toLocalYmd(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function clamp(n: any, min: number, max: number) {
@@ -196,7 +168,7 @@ const todayLog = computed(() => {
   return (
     list.find((l: any) => {
       const d = l.date instanceof Date ? l.date : new Date(l.date);
-      return d.toISOString().slice(0, 10) === targetDate;
+      return toLocalYmd(d) === targetDate;
     }) ?? null
   );
 });
@@ -637,7 +609,7 @@ function evidenceStatusForExercise(ex: any): 'none' | 'pending' | 'responded' {
 
 /** ---------- save (upsert) ---------- */
 const saveWorkout = async () => {
-  const targetDate = dayDateFromUi(dayKeyForSelectedDate.value);
+  const targetDate = parseYmdLocal(workoutDate.value);
   // ✅ BLOQUEA si el día ya pasó (ej: lunes y hoy es martes)
   if (isPastLocalDay(targetDate)) {
     // aquí puedes mostrar toast/alert como quieras

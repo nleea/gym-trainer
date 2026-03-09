@@ -3,7 +3,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useMetricsStore } from '@/stores/metrics.store';
 import type { BodyMetricsEntry } from '@/types';
-import { toJsDate } from '../../../lib/utils';
+import { parseYmdLocal, toJsDate, toYmdLocal } from '../../../lib/utils';
 import { useAuthStore } from '../../stores/auth';
 import { useI18n } from 'vue-i18n';
 import { uploadMetricPhotoToR2 } from '../../repo/metricsrepo';
@@ -604,10 +604,10 @@ onMounted(load);
         <label class="text-sm block">
           {{ t('client.metrics.record.date') }}
           <input
-            :value="form.date.toISOString().slice(0, 10)"
+            :value="toYmdLocal(form.date)"
             type="date"
             class="mt-1 w-full border rounded-lg px-3 py-2"
-            @input="(e: any) => (form.date = new Date(e.target.value + 'T00:00:00'))"
+            @input="(e: any) => (form.date = parseYmdLocal(e.target.value))"
           />
         </label>
 
@@ -761,10 +761,10 @@ onMounted(load);
         <label class="text-sm block">
           {{ t('client.metrics.record.date') }}
           <input
-            :value="form.date.toISOString().slice(0, 10)"
+            :value="toYmdLocal(form.date)"
             type="date"
             class="mt-1 w-full border rounded-lg px-3 py-2 bg-background text-foreground"
-            @input="(e: any) => (form.date = new Date(e.target.value + 'T00:00:00'))"
+            @input="(e: any) => (form.date = parseYmdLocal(e.target.value))"
           />
         </label>
 

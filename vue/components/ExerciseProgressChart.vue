@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Line } from 'vue-chartjs'
+import { toYmdLocal } from '../../lib/utils'
 import {
   Chart as ChartJS,
   Title,
@@ -55,7 +56,7 @@ const exerciseData = computed((): DataPoint[] => {
 
   for (const w of props.workoutHistory) {
     const d = toJsDate(w.date)
-    const key = d.toISOString().slice(0, 10)
+    const key = toYmdLocal(d)
 
     for (const ex of w.exercises ?? []) {
       if (ex.exerciseName?.trim() !== selectedExercise.value) continue

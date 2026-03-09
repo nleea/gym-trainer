@@ -1,7 +1,8 @@
 import { api } from '../api'
+import { toYmdLocal } from '../../lib/utils'
 
 function toISO(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return toYmdLocal(d)
 }
 
 export interface MacroProgress { consumed: number; target: number }

@@ -13,6 +13,7 @@ import {
   CategoryScale,
 } from 'chart.js'
 import { api } from '../api'
+import { toYmdLocal } from '../../lib/utils'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, BarController, LinearScale, CategoryScale)
 
@@ -52,7 +53,7 @@ function currentWeekMonday(): string {
   const day = d.getDay() // 0=Dom
   const diff = day === 0 ? -6 : 1 - day
   d.setDate(d.getDate() + diff)
-  return d.toISOString().slice(0, 10)
+  return toYmdLocal(d)
 }
 
 const thisWeek = currentWeekMonday()

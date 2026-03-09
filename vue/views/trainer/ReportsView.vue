@@ -17,6 +17,7 @@ import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../../stores/auth'
 import { useTrainerStore } from '../../stores/trainer.store'
 import type { ReportPeriod } from '../../repo/trainerRepo'
+import { toYmdLocal } from '../../../lib/utils'
 
 ChartJS.register(
   CategoryScale,
@@ -125,7 +126,7 @@ const groupVolumeChartData = computed(() => {
   const currentWeek = (() => {
     const d = new Date()
     d.setDate(d.getDate() - d.getDay() + 1)
-    return d.toISOString().slice(0, 10)
+    return toYmdLocal(d)
   })()
   return {
     labels: rows.map((r) => {
@@ -339,7 +340,33 @@ watch(period, async (p) => {
 
       <section class="section anim">
         <article class="card">
-          <h3>Progreso semanal por cliente</h3>
+          <div class="section-head">
+            <h3>Progreso semanal por cliente</h3>
+            <p class="section-hint">Toca una tarjeta para abrir el perfil del cliente</p>
+          </div>
+
+          <ul class="weekly-cards">
+            <li v-for="row in weeklyProgressSorted" :key="`m-${row.clientId}`" class="weekly-card" @click="toClient(row.clientId)">
+              <div class="wc-top">
+                <div>
+                  <p class="wc-name">{{ row.clientName }}</p>
+                  <p class="wc-sub">{{ row.completedWorkouts }}/{{ row.plannedWorkouts }} entrenos</p>
+                </div>
+                <span class="state-pill" :class="adherenceClass(Math.round((row.completedWorkouts / Math.max(1, row.plannedWorkouts)) * 100))">
+                  {{ Math.round((row.completedWorkouts / Math.max(1, row.plannedWorkouts)) * 100) }}%
+                </span>
+              </div>
+              <div class="mini wc-progress">
+                <span :style="{ width: `${(row.completedWorkouts / Math.max(1,row.plannedWorkouts))*100}%` }" />
+              </div>
+              <div class="wc-stats">
+                <p><strong>{{ row.volumeKg.toLocaleString('es-CO') }}kg</strong> volumen</p>
+                <p><strong>{{ row.prs }}</strong> PRs</p>
+                <p><strong>🔥 {{ row.streak }}</strong> racha</p>
+              </div>
+            </li>
+          </ul>
+
           <div class="table-wrap">
             <table class="table">
               <thead>
@@ -407,22 +434,22 @@ watch(period, async (p) => {
 </template>
 
 <style scoped>
-.reports-page { display: grid; gap: 1rem; padding: 1rem; }
+.reports-page { display: grid; gap: .85rem; padding: .75rem; }
 .section { animation: rise .35s ease both; }
 .anim { animation-delay: .05s; }
 .card { border: 1px solid var(--border); border-radius: 1rem; background: var(--card); box-shadow: 0 8px 30px rgba(15, 23, 42, .04); padding: 1rem; }
-.title { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--foreground); }
+.title { margin: 0; font-size: 1.45rem; font-weight: 800; color: var(--foreground); line-height: 1.15; }
 .subtitle, .period { margin: .2rem 0 0; color: var(--muted-foreground); font-size: .85rem; }
-.toggle { display: flex; gap: .35rem; background: var(--muted); border-radius: .8rem; padding: .2rem; width: fit-content; }
-.toggle-btn { border: none; background: transparent; border-radius: .65rem; min-height: 2.5rem; padding: 0 .8rem; }
+.toggle { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; background: var(--muted); border-radius: .8rem; padding: .2rem; width: 100%; }
+.toggle-btn { border: none; background: transparent; border-radius: .65rem; min-height: 2.75rem; padding: 0 .8rem; font-weight: 700; }
 .toggle-btn.active { background: var(--card); font-weight: 700; }
 .stats-grid { display: grid; grid-template-columns: 1fr; gap: .7rem; }
 .stat { position: relative; border-left: 4px solid var(--accent); animation-delay: var(--delay); }
 .stat-label { margin: 0; color: var(--muted-foreground); font-size: .75rem; }
-.stat-value { margin: .25rem 0 0; font-size: 1.8rem; font-weight: 800; color: var(--foreground); }
+.stat-value { margin: .25rem 0 0; font-size: 1.5rem; font-weight: 800; color: var(--foreground); }
 .stat-icon { position: absolute; right: .9rem; top: .8rem; font-size: 1.2rem; }
 .two-col { display: grid; grid-template-columns: 1fr; gap: .7rem; }
-.chart-wrap { height: 17rem; }
+.chart-wrap { height: 14rem; }
 .prs-header, .head-row { display: flex; justify-content: space-between; align-items: center; gap: .7rem; }
 .badge { font-size: .7rem; border-radius: 999px; padding: .2rem .6rem; background: var(--muted); }
 .prs-list { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .45rem; }
@@ -445,7 +472,23 @@ watch(period, async (p) => {
 .bar { height: .45rem; border-radius: 999px; background: var(--muted); overflow: hidden; }
 .bar span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
 .warn { margin-top: .7rem; font-size: .75rem; border: 1px solid #facc15; background: rgba(250, 204, 21, .1); color: #a16207; border-radius: .65rem; padding: .4rem .5rem; }
-.table-wrap { overflow-x: auto; margin-top: .6rem; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
+.section-head h3 { margin: 0; }
+.section-hint { margin: 0; color: var(--muted-foreground); font-size: .72rem; text-align: right; }
+.weekly-cards { list-style: none; margin: .25rem 0 0; padding: 0; display: grid; gap: .55rem; }
+.weekly-card { border: 1px solid var(--border); border-radius: .85rem; padding: .65rem; display: grid; gap: .5rem; background: color-mix(in oklch, var(--card) 92%, var(--muted) 8%); cursor: pointer; }
+.wc-top { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.wc-name { margin: 0; color: var(--foreground); font-weight: 700; font-size: .88rem; }
+.wc-sub { margin: .12rem 0 0; color: var(--muted-foreground); font-size: .72rem; }
+.state-pill { border-radius: 999px; padding: .22rem .55rem; font-size: .68rem; font-weight: 700; border: 1px solid transparent; }
+.state-pill.good { color: #166534; background: rgba(22, 163, 74, .14); border-color: rgba(22, 163, 74, .35); }
+.state-pill.mid { color: #854d0e; background: rgba(202, 138, 4, .14); border-color: rgba(202, 138, 4, .35); }
+.state-pill.bad { color: #991b1b; background: rgba(220, 38, 38, .14); border-color: rgba(220, 38, 38, .35); }
+.wc-progress { height: .35rem; margin-top: 0; }
+.wc-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.wc-stats p { margin: 0; font-size: .7rem; color: var(--muted-foreground); }
+.wc-stats strong { color: var(--foreground); font-size: .8rem; }
+.table-wrap { display: none; overflow-x: auto; margin-top: .6rem; }
 .table { width: 100%; border-collapse: collapse; min-width: 46rem; }
 .table th, .table td { text-align: left; padding: .65rem .5rem; border-bottom: 1px solid var(--border); font-size: .82rem; color: var(--foreground); }
 .table th { color: var(--muted-foreground); cursor: pointer; }
@@ -468,8 +511,20 @@ watch(period, async (p) => {
 .r-right .bar span.bad { background: #dc2626; }
 .loading { text-align: center; color: var(--muted-foreground); }
 @keyframes rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+@media (min-width: 40rem) {
+  .reports-page { padding: 1rem; }
+  .title { font-size: 1.6rem; }
+  .toggle { width: fit-content; display: flex; }
+  .stat-value { font-size: 1.8rem; }
+  .chart-wrap { height: 16rem; }
+  .weekly-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (min-width: 48rem) {
+  .weekly-cards { display: none; }
+  .table-wrap { display: block; }
+  .section-hint { display: none; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-wrap { height: 17rem; }
 }
 @media (min-width: 70rem) {
   .stats-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }

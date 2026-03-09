@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ViewMode   = '1 Week' | '2 Week' | '4 Week'
@@ -47,6 +47,8 @@ const today     = new Date()
 const currentDate  = ref(new Date(today))
 const showAddModal = ref(false)
 const hoveredDate  = ref<Date | null>(null)
+const isMobile = ref(false)
+const selectedMobileDate = ref(new Date(today))
 
 const manualTasks = ref<Task[]>([])
 
@@ -67,8 +69,9 @@ const startDate = computed(() => {
 })
 
 const rangeLabel = computed(() => {
+  const rangeDays = isMobile.value ? 7 : weeksCount.value * 7
   const end = new Date(startDate.value)
-  end.setDate(end.getDate() + weeksCount.value * 7 - 1)
+  end.setDate(end.getDate() + rangeDays - 1)
   const fmt = (d: Date) => d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
   return `${fmt(startDate.value)} – ${fmt(end)}`
 })
@@ -88,6 +91,16 @@ const weeks = computed(() => {
   for (let w = 0; w < weeksCount.value; w++)
     result.push(calendarDays.value.slice(w * 7, w * 7 + 7))
   return result
+})
+
+const mobileWeekDays = computed(() => {
+  const days: Date[] = []
+  const d = new Date(startDate.value)
+  for (let i = 0; i < 7; i++) {
+    days.push(new Date(d))
+    d.setDate(d.getDate() + 1)
+  }
+  return days
 })
 
 // ─── Plan-derived tasks ───────────────────────────────────────────────────────
@@ -172,6 +185,7 @@ function handleTaskClick(task: Task) {
 }
 
 function handleDayClick(day: Date) {
+  if (isMobile.value) selectedMobileDate.value = new Date(day)
   if (props.dayStatus) {
     emit('open-day', { date: new Date(day), viewType: viewType.value })
   }
@@ -179,13 +193,15 @@ function handleDayClick(day: Date) {
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 const prev = () => {
+  const step = isMobile.value ? 7 : weeksCount.value * 7
   const d = new Date(currentDate.value)
-  d.setDate(d.getDate() - weeksCount.value * 7)
+  d.setDate(d.getDate() - step)
   currentDate.value = d
 }
 const next = () => {
+  const step = isMobile.value ? 7 : weeksCount.value * 7
   const d = new Date(currentDate.value)
-  d.setDate(d.getDate() + weeksCount.value * 7)
+  d.setDate(d.getDate() + step)
   currentDate.value = d
 }
 const goToday = () => { currentDate.value = new Date(today) }
@@ -213,6 +229,38 @@ const saveTask = () => {
   showAddModal.value = false
   newTask.value = { title: '', type: 'workout', time: '', date: '' }
 }
+
+function formatMobileDay(d: Date) {
+  return d.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '').toUpperCase()
+}
+
+function formatMobileDateTitle(d: Date) {
+  return d.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function updateMobileFlag() {
+  isMobile.value = window.innerWidth < 768
+}
+
+watch(currentDate, () => {
+  if (!isMobile.value) return
+  const visible = mobileWeekDays.value.some((d) => isSameDay(d, selectedMobileDate.value))
+  if (!visible) selectedMobileDate.value = new Date(mobileWeekDays.value[0] ?? currentDate.value)
+})
+
+onMounted(() => {
+  updateMobileFlag()
+  window.addEventListener('resize', updateMobileFlag)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateMobileFlag)
+})
 </script>
 
 <template>
@@ -256,7 +304,7 @@ const saveTask = () => {
       </div>
 
       <!-- Right: week view switcher -->
-      <div class="view-switcher">
+      <div v-if="!isMobile" class="view-switcher">
         <button
           v-for="v in (['1 Week', '2 Week', '4 Week'] as ViewMode[])"
           :key="v"
@@ -268,14 +316,14 @@ const saveTask = () => {
     </div>
 
     <!-- ── Day labels ─────────────────────────────────────── -->
-    <div class="day-labels">
+    <div v-if="!isMobile" class="day-labels">
       <div v-for="d in ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM']" :key="d" class="day-label">
         {{ d }}
       </div>
     </div>
 
     <!-- ── Grid ───────────────────────────────────────────── -->
-    <div class="cal-grid">
+    <div v-if="!isMobile" class="cal-grid">
       <template v-for="(week, wi) in weeks" :key="wi">
         <div
           v-for="day in week"
@@ -335,6 +383,61 @@ const saveTask = () => {
           </div>
         </div>
       </template>
+    </div>
+
+    <!-- ── Mobile Week + Agenda ───────────────────────────── -->
+    <div v-else class="mobile-layout">
+      <div class="mobile-week-strip">
+        <button
+          v-for="day in mobileWeekDays"
+          :key="day.toISOString()"
+          class="mobile-day-pill"
+          :class="{ active: isSameDay(day, selectedMobileDate), today: isToday(day) }"
+          @click="selectedMobileDate = new Date(day)"
+        >
+          <span class="mobile-day-name">{{ formatMobileDay(day) }}</span>
+          <span class="mobile-day-num">{{ day.getDate() }}</span>
+          <span class="mobile-day-count">{{ tasksForDay(day).length }}</span>
+        </button>
+      </div>
+
+      <div class="mobile-day-panel">
+        <div class="mobile-day-panel-head">
+          <h4 class="mobile-day-title">{{ formatMobileDateTitle(selectedMobileDate) }}</h4>
+          <div class="mobile-day-actions">
+            <button class="btn-day-open" @click="handleDayClick(selectedMobileDate)">Abrir</button>
+            <button class="btn-day-add" @click="openAddModal(selectedMobileDate)">+ Tarea</button>
+          </div>
+        </div>
+
+        <div v-if="viewType === 'meals' && !hasMealsData" class="mobile-empty">
+          Sin plan nutricional para esta semana.
+        </div>
+        <div v-else-if="tasksForDay(selectedMobileDate).length === 0" class="mobile-empty">
+          No hay tareas para este día.
+        </div>
+        <div v-else class="mobile-task-list">
+          <div
+            v-for="task in tasksForDay(selectedMobileDate)"
+            :key="task.id"
+            class="task-chip mobile-task-chip"
+            :class="{ done: task.done, 'plan-chip': task.isPlan }"
+            :style="{ '--task-color': typeColor[task.type] }"
+            @click.stop="handleTaskClick(task)"
+          >
+            <span class="task-emoji">{{ typeLabel[task.type] }}</span>
+            <span class="task-title">{{ task.title }}</span>
+            <span v-if="task.time" class="task-time">{{ task.time }}</span>
+            <svg
+              v-if="task.isPlan"
+              class="task-chevron"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── Add Task Modal ─────────────────────────────────── -->
@@ -419,7 +522,8 @@ const saveTask = () => {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 8px;
-  padding: 6px 14px;
+  padding: 10px 14px;
+  min-height: 44px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -434,7 +538,9 @@ const saveTask = () => {
   font-size: 22px;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 10px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 6px;
   line-height: 1;
   transition: color .15s, background .15s;
@@ -463,7 +569,8 @@ const saveTask = () => {
 .vt-btn {
   border: none;
   background: none;
-  padding: 7px 18px;
+  padding: 10px 18px;
+  min-height: 44px;
   border-radius: 7px;
   font-size: 13px;
   font-weight: 600;
@@ -494,7 +601,8 @@ const saveTask = () => {
 .view-btn {
   border: none;
   background: none;
-  padding: 6px 14px;
+  padding: 10px 14px;
+  min-height: 44px;
   border-radius: 7px;
   font-size: 12px;
   font-weight: 600;
@@ -714,4 +822,174 @@ const saveTask = () => {
 /* ── Modal transition ───────────────────────────────────── */
 .modal-enter-active, .modal-leave-active { transition: all .2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.95); }
+
+/* ── Mobile calendar experience ─────────────────────────── */
+.mobile-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+.mobile-week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(72px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.mobile-day-pill {
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  min-height: 78px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text);
+}
+
+.mobile-day-pill.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+.mobile-day-pill.today .mobile-day-num {
+  background: var(--today-bg);
+  color: var(--today-text);
+}
+
+.mobile-day-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.mobile-day-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mobile-day-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-day-panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 260px;
+}
+
+.mobile-day-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.mobile-day-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.mobile-day-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-day-open,
+.btn-day-add {
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.btn-day-add {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.mobile-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-task-chip {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.mobile-empty {
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  padding: 16px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .calendar-root {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 12px;
+    border-radius: 16px;
+    gap: 12px;
+  }
+
+  .cal-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .cal-header-left {
+    justify-content: space-between;
+  }
+
+  .cal-range {
+    flex: 1;
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  .view-type-switcher {
+    width: 100%;
+  }
+
+  .vt-btn {
+    flex: 1;
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+}
 </style>

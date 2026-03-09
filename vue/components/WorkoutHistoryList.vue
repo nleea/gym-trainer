@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { WorkoutHistoryItem } from '../repo/clients'
+import { toYmdLocal } from '../../lib/utils'
 
 const props = defineProps<{
   workoutHistory: WorkoutHistoryItem[]
@@ -16,10 +17,10 @@ function startOfWeek(d = new Date()) {
   const x = new Date(d)
   x.setHours(0, 0, 0, 0)
   x.setDate(x.getDate() - x.getDay())
-  return x.toISOString().slice(0, 10)
+  return toYmdLocal(x)
 }
 function startOfMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+  return toYmdLocal(new Date(d.getFullYear(), d.getMonth(), 1))
 }
 
 const filtered = computed(() => {

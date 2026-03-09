@@ -1,6 +1,7 @@
 import { api } from '../api'
 import type { ExerciseEvidence, WeeklyEvidencesResponse } from '../types'
 import { toDate } from './fireRepo'
+import { toYmdLocal } from '../../lib/utils'
 
 function mapEvidence(d: any): ExerciseEvidence {
   const submittedAt = toDate(d.submitted_at ?? d.submittedAt) ?? new Date()
@@ -12,7 +13,7 @@ function mapEvidence(d: any): ExerciseEvidence {
     clientId: d.client_id ?? d.clientId,
     trainerId: d.trainer_id ?? d.trainerId,
     type: d.type ?? undefined,
-    date: d.date ?? submittedAt.toISOString().slice(0, 10),
+    date: d.date ?? toYmdLocal(submittedAt),
     clientNote: d.client_note ?? d.clientNote ?? null,
     photoUrls: d.photo_urls ?? d.photoUrls ?? [],
     submittedAt,

@@ -1,7 +1,7 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { api, setToken, removeToken, getToken } from '../api'
+import { api, setToken, setRefreshToken, removeToken, getToken, subscribeAuthEvents } from '../api'
 
 type Role = 'client' | 'trainer' | null
 
@@ -29,11 +29,12 @@ type RegisterPayload = {
 
 type LoginResponse = {
   access_token: string
+  refresh_token: string
   token_type: string
   user: AuthUser
 }
 
-// Añade aliases de compatibilidad con las vistas que usaban Firebase User
+  // Añade aliases de compatibilidad con las vistas que usaban Firebase User
 function withAliases(u: AuthUser): AuthUser {
   return { ...u, uid: u.id, client_id: u.client_id ?? u.clientid }
 }
@@ -46,6 +47,42 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!user.value)
   const isClient = computed(() => role.value === 'client')
+  let syncInitialized = false
+
+  function applyStateFromStorage() {
+    const token = getToken()
+    const stored = localStorage.getItem('auth_user')
+    if (!token || !stored) {
+      user.value = null
+      role.value = null
+      return
+    }
+    try {
+      const parsed = withAliases(JSON.parse(stored) as AuthUser)
+      user.value = parsed
+      role.value = parsed.role
+    } catch {
+      user.value = null
+      role.value = null
+    }
+  }
+
+  function setupSessionSync() {
+    if (syncInitialized || typeof window === 'undefined') return
+    syncInitialized = true
+
+    window.addEventListener('storage', (ev) => {
+      if (ev.key === 'access_token' || ev.key === 'auth_user' || ev.key === 'refresh_token') {
+        applyStateFromStorage()
+      }
+    })
+
+    subscribeAuthEvents((event) => {
+      if (event.type === 'logout' || event.type === 'token-updated') {
+        applyStateFromStorage()
+      }
+    })
+  }
 
   function resetState() {
     user.value = null
@@ -54,8 +91,21 @@ export const useAuthStore = defineStore('auth', () => {
     removeToken()
   }
 
+  function getDeviceMetadata() {
+    if (typeof window === 'undefined') return { device_name: 'server', device_info: 'server' }
+    const ua = navigator.userAgent || 'unknown'
+    const platform = navigator.platform || 'unknown-platform'
+    const width = window.innerWidth || 0
+    const kind = width >= 1024 ? 'desktop' : width >= 768 ? 'tablet' : 'mobile'
+    return {
+      device_name: `${platform} ${kind}`.slice(0, 120),
+      device_info: `${platform}; ${navigator.language || 'unknown-lang'}; ${ua}`.slice(0, 500),
+    }
+  }
+
   // Restaurar sesión desde localStorage al iniciar la app
   async function initAuthListener(): Promise<void> {
+    setupSessionSync()
     const token = getToken()
     if (!token) return
 
@@ -86,9 +136,10 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const data = await api.post<LoginResponse>('/auth/login', { email, password })
+      const data = await api.post<LoginResponse>('/auth/login', { email, password, ...getDeviceMetadata() })
       const u = withAliases(data.user)
       setToken(data.access_token)
+      setRefreshToken(data.refresh_token)
       user.value = u
       role.value = u.role
       localStorage.setItem('auth_user', JSON.stringify(u))
@@ -113,10 +164,12 @@ export const useAuthStore = defineStore('auth', () => {
         name: payload.name,
         role: payload.role,
         phone: payload.phone ?? '',
+        ...getDeviceMetadata(),
       })
 
       const u = withAliases(data.user)
       setToken(data.access_token)
+      setRefreshToken(data.refresh_token)
       user.value = u
       role.value = u.role
       localStorage.setItem('auth_user', JSON.stringify(u))
@@ -141,7 +194,12 @@ export const useAuthStore = defineStore('auth', () => {
     return api.post('/auth/create-client', payload)
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // Ignore network/session errors and clear local state anyway.
+    }
     resetState()
   }
 

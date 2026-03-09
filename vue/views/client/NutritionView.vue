@@ -194,6 +194,7 @@ import { useI18n } from 'vue-i18n';
 import { endOfWeek, format, startOfWeek } from 'date-fns';
 import { useAppToast } from '@/composables/useAppToast';
 import { createNutritionEvidence } from '../../repo/evidencesRepo';
+import { toYmdLocal } from '../../../lib/utils';
 const { t } = useI18n();
 import MacroRingsCard from '../../components/MacroRingsCard.vue';
 import WaterTracker from '../../components/WaterTracker.vue';
@@ -403,7 +404,7 @@ const savingKey = ref<string | null>(null);
 
 async function uploadMealEvidence(photo: File, mealName?: string) {
   await createNutritionEvidence({
-    takenAt: selectedDate.value.toISOString().slice(0, 10),
+    takenAt: toYmdLocal(selectedDate.value),
     photo,
     mealName,
   });
@@ -419,7 +420,7 @@ async function onRegisterPlan(payload: { mealKey: string; photo?: File }) {
   savingKey.value = payload.mealKey;
   try {
     await nutritionStore.upsertLog(clientId.value, selectedDate.value, {
-      date: selectedDate.value.toISOString().slice(0, 10),
+      date: toYmdLocal(selectedDate.value),
       type: meal.type ?? 'snack',
       meal_name: meal.name,
       meal_key: payload.mealKey,
@@ -456,7 +457,7 @@ async function onRegisterCustom(
   savingKey.value = payload.mealKey;
   try {
     await nutritionStore.upsertLog(clientId.value, selectedDate.value, {
-      date: selectedDate.value.toISOString().slice(0, 10),
+      date: toYmdLocal(selectedDate.value),
       type: meal.type ?? 'snack',
       meal_name: meal.name,
       meal_key: payload.mealKey,
@@ -481,7 +482,7 @@ async function onDeleteLog(logId: string) {
 async function onWaterUpdate(ml: number) {
   if (!clientId.value) return;
   await nutritionStore.upsertLog(clientId.value, selectedDate.value, {
-    date: selectedDate.value.toISOString().slice(0, 10),
+    date: toYmdLocal(selectedDate.value),
     type: 'water',
     meal_key: 'daily_water',
     meal_name: 'Agua',

@@ -6,9 +6,10 @@ import {
   type NutritionSummary,
   type MealLogUpsertPayload,
 } from '../repo/nutritionRepo'
+import { toYmdLocal } from '../../lib/utils'
 
 function summaryKey(clientId: string, date: Date) {
-  return `${clientId}|${date.toISOString().slice(0, 10)}`
+  return `${clientId}|${toYmdLocal(date)}`
 }
 
 export const useNutritionStore = defineStore('nutrition', {

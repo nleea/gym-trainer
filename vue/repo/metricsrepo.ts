@@ -2,6 +2,7 @@
 import { api } from '../api'
 import type { BodyMetricsEntry } from '../types'
 import { toDate } from './fireRepo'
+import { toYmdLocal } from '../../lib/utils'
 
 function normalizeNumber(v: any): number | null {
   if (v === undefined || v === null || v === '') return null
@@ -13,8 +14,8 @@ function toPayload(entry: Omit<BodyMetricsEntry, 'id'>): Record<string, any> {
   const payload: Record<string, any> = {
     client_id: entry.clientId,
     date: entry.date instanceof Date
-      ? entry.date.toISOString().slice(0, 10)
-      : (entry.date ?? new Date().toISOString().slice(0, 10)),
+      ? toYmdLocal(entry.date)
+      : (entry.date ?? toYmdLocal(new Date())),
     notes: entry.notes ?? null,
     photos: entry.photos ?? null,
     measurement_protocol: entry.measurementProtocol ?? null,

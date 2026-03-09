@@ -121,6 +121,7 @@ import { listTrainingPlans } from '../../repo/training'
 import { listNutritionPlans } from '../../repo/nutritionPlan'
 import { assignTemplateToClient } from '../../repo/training'
 import { assignNutritionTemplateToClient } from '../../repo/nutritionPlan'
+import { toYmdLocal } from '../../../lib/utils'
 
 const props = defineProps<{
   clientId: string
@@ -141,7 +142,7 @@ const activeTab = ref<'training' | 'nutrition'>('training')
 const trainingPlans = ref<TrainingPlan[]>([])
 const nutritionPlans = ref<NutritionPlan[]>([])
 const selectedPlanId = ref<string | null>(null)
-const startDate = ref(new Date().toISOString().slice(0, 10))
+const startDate = ref(toYmdLocal(new Date()))
 const loading = ref(false)
 const error = ref<string | null>(null)
 const assigning = ref(false)

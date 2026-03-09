@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { api } from '../api'
+import { toYmdLocal } from '../../lib/utils'
 
 const props = defineProps<{ clientId: string }>()
 
@@ -46,7 +47,7 @@ function addDays(d: Date, n: number): Date {
 }
 
 function iso(d: Date) {
-  return d.toISOString().slice(0, 10)
+  return toYmdLocal(d)
 }
 
 /** weeks[col][row 0-6 Mon-Sun] */

@@ -4,6 +4,7 @@
 import { api } from '../api'
 import type { AssignedTrainingPlan } from '../types'
 import { toDate } from './fireRepo'
+import { toYmdLocal } from '../../lib/utils'
 
 function mapAssigned(d: any): AssignedTrainingPlan {
   return {
@@ -17,7 +18,7 @@ export async function assignTrainingPlan(data: AssignedTrainingPlan): Promise<st
   const res = await api.post<{ id: string }>(`/training-plans/${data.planId}/assign`, {
     client_id: data.clientId,
     start_date: data.startDate instanceof Date
-      ? data.startDate.toISOString().slice(0, 10)
+      ? toYmdLocal(data.startDate)
       : data.startDate,
   })
   return res.id

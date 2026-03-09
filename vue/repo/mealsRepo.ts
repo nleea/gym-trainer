@@ -2,10 +2,10 @@
 import { api } from '../api'
 import type { MealLog, MealType } from '../types'
 import { toDate } from './fireRepo'
-import { getWeekRange } from '../../lib/utils'
+import { getWeekRange, toYmdLocal } from '../../lib/utils'
 
 function toISO(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return toYmdLocal(d)
 }
 
 function mapLog(d: any): MealLog {

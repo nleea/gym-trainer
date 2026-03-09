@@ -60,10 +60,7 @@ export function toJsDate(value: any): Date | null {
 
 export function dayKey(date: any) {
   const d = date?.toDate ? date.toDate() : new Date(date)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const da = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${da}`
+  return toYmdLocal(d)
 }
 
 export function startOfDay(d: Date) {
@@ -77,8 +74,15 @@ export const isSameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+export function toYmdLocal(d: Date) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const da = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${da}`
+}
+
 export function ymd(d: Date) {
-  return startOfDay(d).toISOString().slice(0, 10)
+  return toYmdLocal(startOfDay(d))
 }
 
 export function getWeekStart(d: Date) {
@@ -102,6 +106,14 @@ export function parseYmdLocal(ymdStr: string) {
   return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0);
 }
 
+export function getDeviceTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
+}
+
 
 export function startOfDayLocal(d: Date) {
   const x = new Date(d);
@@ -118,4 +130,3 @@ export function isPastLocalDay(target: Date) {
   const t = startOfDayLocal(target);
   return t.getTime() < today.getTime();
 }
-
