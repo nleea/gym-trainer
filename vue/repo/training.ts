@@ -3,7 +3,24 @@ import { api } from '../api'
 import type { TrainingPlan } from '../types'
 import { toDate } from './fireRepo'
 
-function mapPlan(d: any): TrainingPlan {
+interface RawTrainingPlan extends Record<string, unknown> {
+  is_template?: boolean
+  isTemplate?: boolean
+  client_id?: string | null
+  clientId?: string | null
+  source_template_id?: string | null
+  sourceTemplateId?: string | null
+  assigned_at?: unknown
+  assignedAt?: unknown
+  copies_count?: number | null
+  copiesCount?: number | null
+  createdAt?: unknown
+  created_at?: unknown
+  updatedAt?: unknown
+  updated_at?: unknown
+}
+
+function mapPlan(d: RawTrainingPlan): TrainingPlan {
   return {
     ...d,
     isTemplate: d.is_template ?? d.isTemplate ?? false,
@@ -26,7 +43,7 @@ export async function createTrainingPlan(_trainerId: string, data: TrainingPlan)
 }
 
 export async function listTrainingPlansByEntrenator(_trainerId?: string): Promise<TrainingPlan[]> {
-  const list = await api.get<any[]>('/training-plans/templates')
+  const list = await api.get<RawTrainingPlan[]>('/training-plans/templates')
   return list.map(mapPlan)
 }
 
@@ -34,7 +51,7 @@ export const listTrainingPlans = listTrainingPlansByEntrenator
 
 export async function getTrainingPlanById(id: string): Promise<TrainingPlan | null> {
   try {
-    const d = await api.get<any>(`/training-plans/${id}`)
+    const d = await api.get<RawTrainingPlan>(`/training-plans/${id}`)
     return mapPlan(d)
   } catch {
     return null
@@ -57,7 +74,7 @@ export async function assignTemplateToClient(
   durationWeeks: number,
   _uid: string
 ): Promise<TrainingPlan | undefined> {
-  const plan = await api.post<any>(`/training-plans/${templatePlanId}/assign`, {
+  const plan = await api.post<RawTrainingPlan>(`/training-plans/${templatePlanId}/assign`, {
     client_id: clientId,
     start_date: startDate,
     duration_weeks: durationWeeks,

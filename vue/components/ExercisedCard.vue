@@ -242,8 +242,25 @@
 import { computed, ref, watch } from 'vue';
 import { useRestTimer } from '../composables/useRestTimer';
 
+interface ExerciseSet {
+  reps: number;
+  weight: number;
+  completed: boolean;
+}
+
+interface ExerciseData {
+  name: string;
+  source: 'plan' | 'extra';
+  setsCount: number;
+  sets: ExerciseSet[];
+  reps: number;
+  weight: number;
+  rest: number;
+  notes: string;
+}
+
 const props = defineProps<{
-  exercise: any;
+  exercise: ExerciseData;
   index: number;
   disableName?: boolean;
   lastPerf?: { reps: number; weight: number; date: string } | null;
@@ -270,7 +287,7 @@ const local = computed({
   set: (v) => emit('update:exercise', v),
 });
 
-function clamp(n: any, min: number, max: number) {
+function clamp(n: unknown, min: number, max: number) {
   const x = Number(n);
   if (!Number.isFinite(x)) return min;
   return Math.max(min, Math.min(max, x));
@@ -361,7 +378,7 @@ watch(
 );
 
 /** Edita un set específico */
-function updateSet(i: number, patch: any) {
+function updateSet(i: number, patch: { reps?: string | number; weight?: string | number }) {
   if (!Array.isArray(local.value.sets)) local.value.sets = [];
 
   const s = local.value.sets[i] ?? { reps: 10, weight: 0, completed: false };
@@ -385,7 +402,7 @@ function applyGlobalToAllSets() {
   const reps = clamp(local.value.reps ?? 10, 0, 200);
   const weight = clamp(local.value.weight ?? 0, 0, 500);
 
-  local.value.sets = local.value.sets.map((s: any) => ({
+  local.value.sets = local.value.sets.map((s) => ({
     ...s,
     reps,
     weight,
@@ -403,7 +420,7 @@ const exHue = computed(() => {
 // ── Display-only: card pulse when all sets completed ────────────────────────
 const isAllCompleted = computed(() => {
   const sets = local.value.sets ?? []
-  return sets.length > 0 && sets.every((s: any) => s.completed)
+  return sets.length > 0 && sets.every((s) => s.completed)
 })
 
 const cardPulse = ref(false)

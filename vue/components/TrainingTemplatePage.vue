@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useDataStore } from '@/stores/data';
+import { usePlansStore } from '@/stores/plan.store';
 import { useClientsStore } from '../stores/clients.store';
 
 import TrainingPlanForm from '@/components/TrainingPlanForm.vue';
 
 const route = useRoute();
 const router = useRouter();
-const store = useDataStore();
+const plansStore = usePlansStore();
 const clientStore = useClientsStore();
 
 const action = ref(false);
@@ -39,9 +39,9 @@ watch(
 
 const save = async () => {
   if (planId) {
-    await store.updateTrainingPlan(planId, plan.value);
+    await plansStore.updateTrainingPlan(planId, plan.value);
   } else {
-    await store.addTrainingPlan(plan.value);
+    await plansStore.addTrainingPlan(plan.value);
   }
   router.back()
 };

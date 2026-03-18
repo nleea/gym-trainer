@@ -11,7 +11,7 @@ export const useClientsStore = defineStore("clients", {
   state: () => ({
     clients: [] as Client[],
     trainingPlan: null as TrainingPlan | null,
-    nutritionplan: null as NutritionPlan | null,
+    nutritionPlan: null as NutritionPlan | null,
     status: "idle" as Status,
     error: null as string | null,
 
@@ -41,9 +41,9 @@ export const useClientsStore = defineStore("clients", {
         }
 
         this.status = "success"
-      } catch (e: any) {
+      } catch (e: unknown) {
         this.status = "error"
-        this.error = e?.message ?? "Error loading clients"
+        this.error = e instanceof Error ? e.message : "Error loading clients"
         throw e
       }
     },
@@ -53,7 +53,7 @@ export const useClientsStore = defineStore("clients", {
     },
 
     async syncNutritionData(data: NutritionPlan) {
-      this.nutritionplan = data;
+      this.nutritionPlan = data;
     },
 
     async fetchPlanTrining(id: string) {
@@ -71,12 +71,12 @@ export const useClientsStore = defineStore("clients", {
     async fetchNutritionPlan(id: string) {
       const data = await getClientNutritionPlan(id);
       if (data) {
-        this.nutritionplan = data
+        this.nutritionPlan = data
         return data
       }
 
       const fallback = await getNutritionPlanById(id)
-      this.nutritionplan = fallback ?? null
+      this.nutritionPlan = fallback ?? null
       return fallback ?? null
     },
 
@@ -150,8 +150,8 @@ export const useClientsStore = defineStore("clients", {
     async updateNutritionPlan(clientId: string, planId: string, updates: Partial<NutritionPlan>) {
       await updateClientNutritionPlan(clientId, planId, updates)
 
-      if (this.nutritionplan) {
-        this.nutritionplan = { ...this.nutritionplan, ...updates }
+      if (this.nutritionPlan) {
+        this.nutritionPlan = { ...this.nutritionPlan, ...updates }
       }
     }
   },

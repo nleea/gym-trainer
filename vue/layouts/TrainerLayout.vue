@@ -24,9 +24,9 @@ const isActive = (path: string) => {
   return route.path.startsWith(path)
 }
 
-const handleLogout = () => {
-  logout()
-  router.push('/auth/login')
+const handleLogout = async () => {
+  await logout()
+  await router.replace('/auth/login')
 }
 </script>
 

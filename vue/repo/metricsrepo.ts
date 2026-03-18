@@ -1,17 +1,17 @@
-// vue/repo/metricsrepo.ts
+// vue/repo/metricsRepo.ts
 import { api } from '../api'
 import type { BodyMetricsEntry } from '../types'
 import { toDate } from './fireRepo'
 import { toYmdLocal } from '../../lib/utils'
 
-function normalizeNumber(v: any): number | null {
+function normalizeNumber(v: unknown): number | null {
   if (v === undefined || v === null || v === '') return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 }
 
-function toPayload(entry: Omit<BodyMetricsEntry, 'id'>): Record<string, any> {
-  const payload: Record<string, any> = {
+function toPayload(entry: Omit<BodyMetricsEntry, 'id'>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
     client_id: entry.clientId,
     date: entry.date instanceof Date
       ? toYmdLocal(entry.date)
@@ -48,10 +48,85 @@ function toPayload(entry: Omit<BodyMetricsEntry, 'id'>): Record<string, any> {
   return payload
 }
 
-function fromResponse(d: any): BodyMetricsEntry {
+interface RawMetricsEntry extends Record<string, unknown> {
+  id?: string
+  client_id?: string
+  clientId?: string
+  date?: unknown
+  weight_kg?: number | null
+  weightKg?: number | null
+  body_fat_pct?: number | null
+  bodyFatPct?: number | null
+  muscle_pct?: number | null
+  musclePct?: number | null
+  water_pct?: number | null
+  waterPct?: number | null
+  visceral_fat?: number | null
+  visceralFat?: number | null
+  bone_mass_kg?: number | null
+  boneMassKg?: number | null
+  bmr_kcal?: number | null
+  bmrKcal?: number | null
+  neck_cm?: number | null
+  neckCm?: number | null
+  shoulders_cm?: number | null
+  shouldersCm?: number | null
+  chest_cm?: number | null
+  chestCm?: number | null
+  under_chest_cm?: number | null
+  underChestCm?: number | null
+  waist_cm?: number | null
+  waistCm?: number | null
+  abdomen_cm?: number | null
+  abdomenCm?: number | null
+  hips_cm?: number | null
+  hipsCm?: number | null
+  arm_relaxed_left_cm?: number | null
+  armRelaxedLeftCm?: number | null
+  arm_relaxed_right_cm?: number | null
+  armRelaxedRightCm?: number | null
+  arm_flexed_left_cm?: number | null
+  armFlexedLeftCm?: number | null
+  arm_flexed_right_cm?: number | null
+  armFlexedRightCm?: number | null
+  forearm_left_cm?: number | null
+  forearmLeftCm?: number | null
+  forearm_right_cm?: number | null
+  forearmRightCm?: number | null
+  thigh_left_cm?: number | null
+  thighLeftCm?: number | null
+  thigh_right_cm?: number | null
+  thighRightCm?: number | null
+  calf_left_cm?: number | null
+  calfLeftCm?: number | null
+  calf_right_cm?: number | null
+  calfRightCm?: number | null
+  notes?: string | null
+  photos?: string[] | null
+  measurement_protocol?: string | null
+  measurementProtocol?: string | null
+}
+
+interface RawMetricsSummary {
+  deltas: {
+    weightKg: DeltaValue
+    bodyFatPct: DeltaValue
+    waistCm: DeltaValue
+    abdomenCm: DeltaValue
+  }
+  series: {
+    weightKg: SeriesPoint[]
+    bodyFatPct: SeriesPoint[]
+    waistCm: SeriesPoint[]
+    abdomenCm: SeriesPoint[]
+  }
+  history?: RawMetricsEntry[]
+}
+
+function fromResponse(d: RawMetricsEntry): BodyMetricsEntry {
   return {
     id: d.id,
-    clientId: d.client_id ?? d.clientId,
+    clientId: (d.client_id ?? d.clientId) as string,
     date: toDate(d.date) ?? new Date(),
     weightKg: d.weight_kg ?? d.weightKg ?? null,
     bodyFatPct: d.body_fat_pct ?? d.bodyFatPct ?? null,
@@ -79,12 +154,12 @@ function fromResponse(d: any): BodyMetricsEntry {
     calfRightCm: d.calf_right_cm ?? d.calfRightCm ?? null,
     notes: d.notes ?? null,
     photos: d.photos ?? null,
-    measurementProtocol: d.measurement_protocol ?? d.measurementProtocol ?? null,
+    measurementProtocol: (d.measurement_protocol ?? d.measurementProtocol ?? null) as BodyMetricsEntry['measurementProtocol'],
   }
 }
 
 export async function listMetricsByClient(clientId: string, _limitN = 200): Promise<BodyMetricsEntry[]> {
-  const list = await api.get<any[]>(`/metrics/${clientId}`)
+  const list = await api.get<RawMetricsEntry[]>(`/metrics/${clientId}`)
   return list.map(fromResponse)
 }
 
@@ -122,7 +197,7 @@ export interface MetricPhotoUploadUrl {
 }
 
 export async function getMetricsSummary(clientId: string): Promise<MetricsSummary> {
-  const raw = await api.get<any>(`/clients/${clientId}/metrics-summary`)
+  const raw = await api.get<RawMetricsSummary>(`/clients/${clientId}/metrics-summary`)
   return {
     deltas: raw.deltas,
     series: raw.series,
@@ -170,7 +245,7 @@ export async function updateMetricsEntry(
   entryId: string,
   updates: Partial<BodyMetricsEntry>
 ): Promise<void> {
-  await api.put(`/metrics/${entryId}`, toPayload(updates as any))
+  await api.put(`/metrics/${entryId}`, toPayload(updates as Omit<BodyMetricsEntry, 'id'>))
 }
 
 export async function deleteMetricsEntry(_clientId: string, entryId: string): Promise<void> {

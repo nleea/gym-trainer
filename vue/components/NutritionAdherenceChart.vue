@@ -39,7 +39,7 @@
 <script setup lang="ts">
 import type { DailyAdherence, Adherence } from '../repo/nutritionRepo'
 
-const props = defineProps<{
+defineProps<{
   history: DailyAdherence[]
   adherence: Adherence
 }>()

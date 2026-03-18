@@ -5,6 +5,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 type ViewMode   = '1 Week' | '2 Week' | '4 Week'
 type DayStatus  = 'completed' | 'planned' | 'rest' | 'empty'
 type ViewType   = 'workouts' | 'meals'
+type MealStatus = 'completed' | 'planned' | 'empty'
 
 interface Task {
   id: number | string
@@ -20,16 +21,18 @@ interface Task {
 const props = withDefaults(defineProps<{
   // Workouts
   dayStatus?:    (d: Date) => DayStatus
-  exercises?:    (d: Date) => any[]
-  log?:          (d: Date) => any | null
+  exercises?:    (d: Date) => { name?: string }[]
+  log?:          (d: Date) => object | null
   // Meals
-  mealsForDate?:    (d: Date) => any[]
-  mealLogForDate?:  (d: Date) => any | null
+  mealsForDate?:    (d: Date) => { name?: string; meal_name?: string; type?: string }[]
+  mealStatusForDate?: (d: Date) => MealStatus
+  mealLogForDate?:  (d: Date) => Record<string, unknown> | null
 }>(), {
   dayStatus:     undefined,
   exercises:     undefined,
   log:           undefined,
   mealsForDate:  undefined,
+  mealStatusForDate: undefined,
   mealLogForDate: undefined,
 })
 
@@ -113,7 +116,7 @@ const workoutTasks = computed<Task[]>(() => {
     const status = props.dayStatus!(day)
     if (status === 'completed' || status === 'planned') {
       const exs = props.exercises?.(day) ?? []
-      const names = exs.slice(0, 2).map((e: any) => e.name).filter(Boolean)
+      const names = exs.slice(0, 2).map((e) => e.name).filter(Boolean)
       const title = names.length
         ? names.join(' · ') + (exs.length > 2 ? ` +${exs.length - 2}` : '')
         : 'Entrenamiento'
@@ -130,8 +133,9 @@ const mealTasks = computed<Task[]>(() => {
   return calendarDays.value.flatMap((day, i): Task[] => {
     const meals = props.mealsForDate!(day)
     if (!meals?.length) return []
-    const logged = !!props.mealLogForDate?.(day)
-    const names = meals.slice(0, 2).map((m: any) => m.name || m.meal_name || m.type).filter(Boolean)
+    const status = props.mealStatusForDate?.(day)
+    const logged = status ? status === 'completed' : !!props.mealLogForDate?.(day)
+    const names = meals.slice(0, 2).map((m) => m.name || m.meal_name || m.type).filter(Boolean)
     const title = names.length
       ? names.join(' · ') + (meals.length > 2 ? ` +${meals.length - 2}` : '')
       : 'Plan nutricional'

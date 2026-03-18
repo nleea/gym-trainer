@@ -71,6 +71,20 @@ export function removeToken(): void {
   emitAuthEvent({ type: 'logout', at: Date.now() })
 }
 
+export async function revokeCurrentSession(): Promise<void> {
+  const token = getToken()
+  if (!token) return
+
+  try {
+    await fetch(`${BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: buildHeaders(token, true),
+    })
+  } catch {
+    // Ignore transport errors. Local logout should still complete.
+  }
+}
+
 // ── HTTP client ───────────────────────────────────────────────────────────────
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 

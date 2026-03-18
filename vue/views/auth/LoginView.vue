@@ -36,15 +36,16 @@ const handleSubmit = async () => {
     if (result.ok) {
 
       if(result.role === 'trainer') {
-        router.push('/trainer/');
+        await router.replace('/trainer/');
         return;
       }
 
-      router.push('/client/');
+      await router.replace('/client/');
     }
 
-  } catch (e: any) {
-    const code = e?.code || '';
+  } catch (e: unknown) {
+    const err = e as { code?: string; message?: string }
+    const code = err?.code || '';
     if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
       error.value = t('auth.errors.invalidCredential');
     } else if (code === 'auth/user-not-found') {

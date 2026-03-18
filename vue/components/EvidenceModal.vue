@@ -91,8 +91,8 @@ async function submit() {
     toast.success('Evidencia enviada')
     emit('submitted')
     emit('close')
-  } catch (e: any) {
-    toast.error(e?.message || 'No se pudo enviar la evidencia')
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : 'No se pudo enviar la evidencia')
   } finally {
     sending.value = false
   }

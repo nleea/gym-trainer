@@ -19,8 +19,8 @@ async function load() {
   error.value = null
   try {
     data.value = await api.get<HeatmapItem[]>(`/clients/${props.clientId}/workout-heatmap`)
-  } catch (e: any) {
-    error.value = e?.message ?? 'Error al cargar el heatmap'
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Error al cargar el heatmap'
   } finally {
     loading.value = false
   }

@@ -175,6 +175,7 @@ import {
   Filler,
   Tooltip,
 } from 'chart.js'
+import type { TooltipItem } from 'chart.js'
 import { format, parseISO, startOfWeek, addDays } from 'date-fns'
 import type { DashboardClient } from '../../repo/trainerRepo'
 
@@ -230,7 +231,7 @@ const chartData = computed(() => {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => `${ctx.raw} kg` } } },
+  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: TooltipItem<'line'>) => `${ctx.raw} kg` } } },
   scales: {
     x: { display: false },
     y: { display: false },

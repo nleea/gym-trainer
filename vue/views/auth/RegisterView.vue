@@ -37,12 +37,15 @@ const handleSubmit = async () => {
   error.value = ''
   
   try {
-    const success = register(name.value, email.value, password.value, role.value)
-    
-    if (success) {
+    const result = await register(email.value, password.value, {
+      name: name.value,
+      role: role.value,
+    })
+
+    if (result.ok) {
       router.push(role.value === 'trainer' ? '/trainer' : '/client')
     } else {
-      error.value = t('auth.errors.createAccount')
+      error.value = result.message ?? t('auth.errors.createAccount')
     }
   } catch {
     error.value = t('auth.errors.register')

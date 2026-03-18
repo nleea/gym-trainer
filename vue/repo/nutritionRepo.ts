@@ -1,4 +1,5 @@
 import { api } from '../api'
+import type { MealFood } from '../types'
 import { toYmdLocal } from '../../lib/utils'
 
 function toISO(d: Date): string {
@@ -29,7 +30,7 @@ export interface MealLogFull {
   fat?: number
   fiber?: number
   water_ml?: number
-  foods?: any
+  foods?: MealFood[]
   notes?: string
   created_at: string
   updated_at: string
@@ -57,7 +58,7 @@ export interface MealLogUpsertPayload {
   fat?: number
   fiber?: number
   water_ml?: number
-  foods?: any
+  foods?: MealFood[]
   notes?: string
 }
 

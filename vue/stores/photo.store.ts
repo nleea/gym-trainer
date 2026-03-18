@@ -18,8 +18,8 @@ export const usePhotoStore = defineStore('photos', () => {
     error.value = null
     try {
       timelines.value[k] = await photoRepo.getTimeline(clientId, type)
-    } catch (e: any) {
-      error.value = e.message
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : String(e)
     } finally {
       loading.value[k] = false
     }

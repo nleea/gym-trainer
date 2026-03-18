@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { useDataStore } from '../../stores/data';
+import { usePlansStore } from '../../stores/plan.store';
 import type { TrainingWeek } from '../../types';
 
 import TrainingTemplatePage from '../../components/TrainingTemplatePage.vue';
 
 const route = useRoute();
-const dataStore = useDataStore();
-const { getTrainingPlan, loadTrainingPlans } = dataStore;
+const plansStore = usePlansStore();
+const { getTrainingPlanLocal: getTrainingPlan, loadTrainingPlans } = plansStore;
 
 const selectedPlanId = ref<string>('new');
 

@@ -11,12 +11,13 @@ import {
   Tooltip,
   BarElement,
 } from 'chart.js'
+import type { TooltipItem } from 'chart.js'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../../stores/auth'
 import { useTrainerStore } from '../../stores/trainer.store'
-import type { ReportPeriod } from '../../repo/trainerRepo'
+import type { ReportPeriod, TrainerReportsResponse } from '../../repo/trainerRepo'
 import { toYmdLocal } from '../../../lib/utils'
 
 ChartJS.register(
@@ -109,7 +110,7 @@ const attendanceChartOptions = computed(() => ({
     legend: { position: 'bottom' as const },
     tooltip: {
       callbacks: {
-        label: (ctx: any) => `${ctx.dataset.label}: ${ctx.raw} clientes`,
+        label: (ctx: TooltipItem<'bar'>) => `${ctx.dataset.label}: ${ctx.raw} clientes`,
       },
     },
   },
@@ -153,7 +154,7 @@ const groupVolumeChartOptions = computed(() => ({
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (ctx: any) => `${Number(ctx.raw).toLocaleString('es-CO')} kg`,
+        label: (ctx: TooltipItem<'bar'>) => `${Number(ctx.raw).toLocaleString('es-CO')} kg`,
       },
     },
   },
@@ -161,7 +162,7 @@ const groupVolumeChartOptions = computed(() => ({
     y: {
       beginAtZero: true,
       ticks: {
-        callback: (v: any) => `${Math.round(Number(v) / 1000)}k kg`,
+        callback: (v: string | number) => `${Math.round(Number(v) / 1000)}k kg`,
       },
     },
   },
@@ -207,15 +208,17 @@ const adherenceHistoryOptions = computed(() => ({
   },
 }))
 
+type WeeklyProgressRow = TrainerReportsResponse['weeklyProgress'][number]
+
 const weeklyProgressSorted = computed(() => {
   const rows = [...(reports.value?.weeklyProgress ?? [])]
-  const getStatus = (r: any) => {
+  const getStatus = (r: WeeklyProgressRow) => {
     const pct = (r.completedWorkouts / Math.max(1, r.plannedWorkouts)) * 100
     if (pct >= 75) return 3
     if (pct >= 50) return 2
     return 1
   }
-  rows.sort((a: any, b: any) => {
+  rows.sort((a: WeeklyProgressRow, b: WeeklyProgressRow) => {
     let comp = 0
     if (sortBy.value === 'client') comp = a.clientName.localeCompare(b.clientName)
     if (sortBy.value === 'workouts') comp = a.completedWorkouts / Math.max(1, a.plannedWorkouts) - b.completedWorkouts / Math.max(1, b.plannedWorkouts)

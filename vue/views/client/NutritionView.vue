@@ -211,7 +211,7 @@ const toast = useAppToast();
 const { user } = storeToRefs(authStore);
 const clientId = computed(() => user.value?.client_id ?? '');
 const nutritionPlanId = computed(
-  () => user.value?.nutriton_plan ?? '',
+  () => user.value?.nutrition_plan ?? '',
 );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -339,12 +339,12 @@ const nutritionPlan = computed(() =>
 );
 
 const todayMeals = computed(() => {
-  const plan = nutritionPlan.value as any;
+  const plan = nutritionPlan.value;
   if (!plan) return [];
-  return plan.days?.find((d: any) => d.day === selectedDay.value)?.meals ?? [];
+  return plan.days?.find((d) => d.day === selectedDay.value)?.meals ?? [];
 });
 
-function mealKey(meal: any, idx: number) {
+function mealKey(meal: { type?: string }, idx: number) {
   return `${selectedDay.value}_${meal.type ?? 'meal'}_${idx}`;
 }
 
@@ -428,15 +428,15 @@ async function onRegisterPlan(payload: { mealKey: string; photo?: File }) {
       protein: meal.protein,
       carbs: meal.carbs,
       fat: meal.fat,
-      foods: meal.foods ?? null,
-      notes: meal.notes ?? null,
+      foods: meal.foods ?? undefined,
+      notes: meal.notes ?? undefined,
     });
     if (payload.photo) {
       await uploadMealEvidence(payload.photo, meal.name);
     }
     toast.success(payload.photo ? 'Comida y evidencia registradas' : 'Comida registrada');
-  } catch (e: any) {
-    toast.error(e?.message ?? 'No se pudo registrar la comida');
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : 'No se pudo registrar la comida');
   } finally {
     savingKey.value = null;
   }
@@ -467,8 +467,8 @@ async function onRegisterCustom(
       await uploadMealEvidence(payload.photo, meal.name);
     }
     toast.success(payload.photo ? 'Comida y evidencia registradas' : 'Comida registrada');
-  } catch (e: any) {
-    toast.error(e?.message ?? 'No se pudo registrar la comida');
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : 'No se pudo registrar la comida');
   } finally {
     savingKey.value = null;
   }

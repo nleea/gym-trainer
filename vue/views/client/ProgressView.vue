@@ -65,7 +65,7 @@ import ExerciseProgressChart from '@/components/ExerciseProgressChart.vue'
 import ExerciseProgressList from '@/components/ExerciseProgressList.vue'
 import bodyEvolutionChart from '@/components/bodyEvolutionChart.vue'
 import WorkoutHistoryList from '@/components/WorkoutHistoryList.vue'
-import ClientMetricsView from './metrictsView.vue'
+import ClientMetricsView from './MetricsView.vue'
 import ClientReportsSection from '@/components/ClientReportsSection.vue'
 
 import { useAuthStore } from '../../stores/auth'

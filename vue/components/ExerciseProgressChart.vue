@@ -13,16 +13,25 @@ import {
   LinearScale,
   CategoryScale,
   Filler,
+  type ChartDataset,
 } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale, Filler)
 
-const props = defineProps<{ workoutHistory: any[] }>()
+interface WorkoutHistoryItem {
+  date: Date | string | { toDate: () => Date }
+  exercises?: {
+    exerciseName?: string
+    sets?: { weight?: number }[]
+  }[]
+}
 
-function toJsDate(d: any): Date {
+const props = defineProps<{ workoutHistory: WorkoutHistoryItem[] }>()
+
+function toJsDate(d: Date | string | { toDate: () => Date } | null | undefined): Date {
   if (!d) return new Date(0)
   if (d instanceof Date) return d
-  if (typeof d?.toDate === 'function') return d.toDate()
-  return new Date(d)
+  if (typeof d === 'object' && 'toDate' in d && typeof d.toDate === 'function') return d.toDate()
+  return new Date(d as string)
 }
 
 const exerciseNames = computed(() => {
@@ -90,7 +99,7 @@ const chartData = computed(() => {
   const labels = data.map(p => fmtDate(p.date))
   const prVal = pr.value
 
-  const datasets: any[] = [
+  const datasets: ChartDataset<'line', (number | null)[]>[] = [
     {
       label: 'Peso máx (kg)',
       data: data.map(p => p.maxWeight),

@@ -28,7 +28,7 @@
 import { computed, watch } from 'vue';
 import { useLogsStore } from '@/stores/logs.store';
 import bodyEvolutionChart from './bodyEvolutionChart.vue';
-import ClientMetricsView from '../views/client/metrictsView.vue';
+import ClientMetricsView from '../views/client/MetricsView.vue';
 import { useMetricsStore } from '@/stores/metrics.store';
 // vue-chartjs
 

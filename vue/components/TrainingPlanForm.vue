@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { useDataStore } from '../stores/data';
+import { usePlansStore } from '../stores/plan.store';
 import { useClientsStore } from '../stores/clients.store';
 import { useAuthStore } from '@/stores/auth';
 
@@ -25,6 +25,10 @@ type EditableTrainingPlan = {
   name: string;
   description?: string;
   weeks: TrainingWeek[];
+  isTemplate?: boolean;
+  is_template?: boolean;
+  sourceTemplateId?: string | null;
+  source_template_id?: string | null;
 };
 
 const props = defineProps<{
@@ -40,7 +44,7 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const router = useRouter();
-const dataStore = useDataStore();
+const plansStore = usePlansStore();
 const clientStore = useClientsStore();
 
 const authStore = useAuthStore();
@@ -48,11 +52,12 @@ const { user } = storeToRefs(authStore);
 
 const {
   addTrainingPlan,
-  getTrainingPlan,
+  getTrainingPlanLocal: getTrainingPlan,
   loadTrainingPlans,
-  activeClients,
   assignTrainingPlan,
-} = dataStore;
+} = plansStore;
+
+const { activeClients } = clientStore;
 
 const clientId = route.params.clientId as string | undefined;
 
@@ -75,10 +80,10 @@ const plan = computed<EditableTrainingPlan>({
 });
 
 const isTemplateEditing = computed(
-  () => Boolean((plan.value as any).isTemplate || (plan.value as any).is_template),
+  () => Boolean(plan.value.isTemplate || plan.value.is_template),
 );
 const sourceTemplateLabel = computed(() => {
-  const source = (plan.value as any).sourceTemplateId || (plan.value as any).source_template_id;
+  const source = plan.value.sourceTemplateId || plan.value.source_template_id;
   return source ? String(source) : 'Sin origen';
 });
 
@@ -197,7 +202,7 @@ const availableDays = computed(() => {
   const week = plan.value.weeks[activeWeek.value];
   if (!week) return [...daysOfWeek];
   const used = new Set(week.days.map((d) => d.day.trim().toLowerCase()));
-  return daysOfWeek.filter((d) => !used.has(d.key as any));
+  return daysOfWeek.filter((d) => !used.has(d.key));
 });
 
 /** ======================================================================
@@ -227,7 +232,7 @@ const openExerciseModal = (weekIndex: number, dayIndex: number) => {
 
 const applyExerciseFromLibrary = (exercise: ExerciseItem) => {
   newExercise.value.name = exercise.name
-  newExercise.muscleGroup = exercise.bodyPart || ''
+  newExercise.value.muscleGroup = exercise.bodyPart || ''
   exerciseModalTab.value = 'manual'
 }
 
@@ -240,9 +245,9 @@ const addExerciseManualToPlan = () => {
     muscleGroup: String(newExercise.value.muscleGroup),
     sets: Number(newExercise.value.sets || 3),
     reps: String(newExercise.value.reps || '12'),
-    weight: (newExercise.value.weight ?? 0) as any,
-    rest: (newExercise.value.rest ?? '') as any,
-    notes: (newExercise.value.notes ?? '') as any,
+    weight: Number(newExercise.value.weight ?? 0),
+    rest: String(newExercise.value.rest ?? ''),
+    notes: String(newExercise.value.notes ?? ''),
   };
 
   const weeks = deepClone(plan.value.weeks);
@@ -302,9 +307,9 @@ const addExerciseFromLibraryToPlan = () => {
     muscleGroup: ex.muscleGroup,
     sets: libSets.value,
     reps: libReps.value,
-    weight: libWeight.value as any,
-    rest: libRest.value as any,
-    notes: libNotes.value as any,
+    weight: Number(libWeight.value),
+    rest: String(libRest.value),
+    notes: String(libNotes.value),
   };
 
   const weeks = deepClone(plan.value.weeks);
@@ -345,7 +350,7 @@ const createLibraryExercise = async () => {
       equipment: libNewEquipment.value.trim() || undefined,
       notes: libNewNotes.value.trim() || undefined,
       active: true,
-    } as any);
+    });
     showCreateLibraryExerciseModal.value = false;
   } finally {
     creatingLib.value = false;
@@ -363,7 +368,7 @@ const openEditLibraryExercise = (ex: LibraryExercise) => {
   libEditName.value = ex.name ?? '';
   libEditGroup.value = ex.muscleGroup;
   libEditEquipment.value = ex.equipment ?? '';
-  libEditNotes.value = (ex as any).notes ?? '';
+  libEditNotes.value = ex.notes ?? '';
   showEditLibraryExerciseModal.value = true;
 };
 
@@ -378,7 +383,7 @@ const saveEditLibraryExercise = async () => {
       muscleGroup: libEditGroup.value,
       equipment: libEditEquipment.value.trim() || undefined,
       notes: libEditNotes.value.trim() || undefined,
-    } as any);
+    });
     showEditLibraryExerciseModal.value = false;
     editingLibId.value = null;
   } finally {
@@ -392,7 +397,7 @@ const deleteLibraryExercise = async (ex: LibraryExercise) => {
   if (!ok) return;
   deletingLib.value = true;
   try {
-    await libApi.value.updateExercise(ex.id, { active: false } as any);
+    await libApi.value.updateExercise(ex.id, { active: false });
     if (selectedLibraryId.value === ex.id) selectedLibraryId.value = '';
   } finally {
     deletingLib.value = false;
@@ -593,7 +598,7 @@ function dayLabel(key: string) {
           <button
             v-for="day in availableDays"
             :key="day.key"
-            @click="addDay(activeWeek, day.key as any)"
+            @click="addDay(activeWeek, day.key)"
             class="flex items-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2 text-sm text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary active:scale-95"
           >
             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -729,7 +734,7 @@ function dayLabel(key: string) {
               v-for="tab in [{ key: 'library', label: 'Biblioteca' }, { key: 'manual', label: 'Manual' }]"
               :key="tab.key"
               type="button"
-              @click="exerciseModalTab = tab.key as any"
+              @click="exerciseModalTab = tab.key as 'library' | 'manual'"
               class="mr-4 border-b-2 py-3 text-sm font-medium transition-colors"
               :class="exerciseModalTab === tab.key
                 ? 'border-primary text-primary'
@@ -995,7 +1000,7 @@ function dayLabel(key: string) {
               <span class="text-xs font-medium text-muted-foreground">Grupo muscular *</span>
               <div class="flex flex-wrap gap-1.5">
                 <button v-for="g in libraryGroups.filter(g => g !== 'Todos')" :key="g" type="button"
-                  @click="libNewGroup = g as any"
+                  @click="libNewGroup = g as LibraryMuscleGroup"
                   class="rounded-xl px-3 py-1.5 text-xs font-semibold transition-all"
                   :class="libNewGroup === g ? muscleStyle(g) + ' ring-1 ring-current' : 'bg-muted text-muted-foreground'">
                   {{ g }}
@@ -1045,7 +1050,7 @@ function dayLabel(key: string) {
               <span class="text-xs font-medium text-muted-foreground">Grupo muscular *</span>
               <div class="flex flex-wrap gap-1.5">
                 <button v-for="g in libraryGroups.filter(g => g !== 'Todos')" :key="g" type="button"
-                  @click="libEditGroup = g as any"
+                  @click="libEditGroup = g as LibraryMuscleGroup"
                   class="rounded-xl px-3 py-1.5 text-xs font-semibold transition-all"
                   :class="libEditGroup === g ? muscleStyle(g) + ' ring-1 ring-current' : 'bg-muted text-muted-foreground'">
                   {{ g }}

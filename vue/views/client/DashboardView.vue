@@ -347,13 +347,13 @@
                       class="macro-fill macro-protein"
                       :style="{
                         '--ring-to': String(175.9 * (1 - Math.min(1, totalProtein > 0
-                          ? todayNutrition.filter((m: any) => m.registered).reduce((s: number, m: any) => s + (m.protein || 0), 0) / totalProtein
+                          ? todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.protein || 0), 0) / totalProtein
                           : 0)))
                       }"
                     />
                   </svg>
                   <div class="macro-center">
-                    <span class="macro-val">{{ todayNutrition.filter((m: any) => m.registered).reduce((s: number, m: any) => s + (m.protein || 0), 0) }}</span>
+                    <span class="macro-val">{{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.protein || 0), 0) }}</span>
                     <span class="macro-unit">g</span>
                   </div>
                 </div>
@@ -370,13 +370,13 @@
                       class="macro-fill macro-carbs"
                       :style="{
                         '--ring-to': String(175.9 * (1 - Math.min(1, totalCarbs > 0
-                          ? todayNutrition.filter((m: any) => m.registered).reduce((s: number, m: any) => s + (m.carbs || 0), 0) / totalCarbs
+                          ? todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.carbs || 0), 0) / totalCarbs
                           : 0)))
                       }"
                     />
                   </svg>
                   <div class="macro-center">
-                    <span class="macro-val">{{ todayNutrition.filter((m: any) => m.registered).reduce((s: number, m: any) => s + (m.carbs || 0), 0) }}</span>
+                    <span class="macro-val">{{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.carbs || 0), 0) }}</span>
                     <span class="macro-unit">g</span>
                   </div>
                 </div>
@@ -393,13 +393,13 @@
                       class="macro-fill macro-calories"
                       :style="{
                         '--ring-to': String(175.9 * (1 - Math.min(1, totalCalories > 0
-                          ? todayNutrition.filter((m: any) => m.registered).reduce((s: number, m: any) => s + (m.calories || 0), 0) / totalCalories
+                          ? todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) / totalCalories
                           : 0)))
                       }"
                     />
                   </svg>
                   <div class="macro-center">
-                    <span class="macro-val macro-val-sm">{{ todayNutrition.filter((m: any) => m.registered).reduce((s: number, m: any) => s + (m.calories || 0), 0) }}</span>
+                    <span class="macro-val macro-val-sm">{{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) }}</span>
                     <span class="macro-unit">kcal</span>
                   </div>
                 </div>
@@ -422,7 +422,7 @@
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-xs font-semibold text-foreground">{{ meal.name }}</p>
-                  <p class="text-[10px] text-muted-foreground">{{ (meal as any).time }} · {{ meal.calories }} kcal</p>
+                  <p class="text-[10px] text-muted-foreground">{{ ('time' in meal ? (meal as Record<string, unknown>).time : '') }} · {{ meal.calories }} kcal</p>
                 </div>
               </div>
             </div>
@@ -452,7 +452,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch} from 'vue';
+import { computed, watch } from 'vue';
+import type { MealLog } from '../../types';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../../stores/auth';
@@ -486,9 +487,9 @@ const { user } = storeToRefs(authStore);
 const { mealLogs, trainingLogsByWeekKey } = storeToRefs(logs);
 
 const clientId = computed(() => user.value?.client_id || user.value?.uid || '');
-const planid = computed(() => user.value?.plan || (user.value as any)?.plan_id || '');
+const planid = computed(() => user.value?.plan || '');
 const nutritionPlanId = computed(() =>
-  user.value?.nutriton_plan || (user.value as any)?.nutrition_plan_id || ''
+  user.value?.nutrition_plan || ''
 );
 
 watch(
@@ -515,7 +516,7 @@ watch(
 );
 
 // helpers
-const jsDate = (d: any) => (d instanceof Date ? d : new Date(d));
+const jsDate = (d: string | number | Date) => (d instanceof Date ? d : new Date(d));
 const isSameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() &&
   a.getMonth() === b.getMonth() &&
@@ -535,12 +536,6 @@ const dayKeyToday = computed(() => {
   return map[new Date().getDay()];
 });
 
-const greetingMessage = computed(() => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Buenos días. Es hora de empezar fuerte.';
-  if (hour < 18) return 'Buenas tardes. Mantén el ritmo.';
-  return 'Buenas noches. Revisa tu progreso del día.';
-});
 
 /**
  * ✅ Entrenos completados esta semana (usando trainingLogs)
@@ -568,9 +563,9 @@ const todayNutrition = computed(() => {
   const plannedMeals = todayPlanDay?.meals ?? [];
 
   const today = new Date();
-  const getMealClientId = (m: any) => m.clientId ?? m.client_id ?? '';
+  const getMealClientId = (m: MealLog) => m.clientId ?? '';
   const mealsLoggedToday = mealLogs.value.filter(
-    (m: any) =>
+    (m) =>
       getMealClientId(m) === clientId.value && isSameDay(jsDate(m.date), today),
   );
 
@@ -611,15 +606,15 @@ const metricsProgressRatio = computed(() => (currentWeight.value != null ? 1 : 0
  */
 const totalCalories = computed(() =>
   todayNutrition.value.reduce(
-    (sum, meal: any) => sum + (meal.calories || 0),
+    (sum, meal) => sum + (meal.calories || 0),
     0,
   ),
 );
 const totalProtein = computed(() =>
-  todayNutrition.value.reduce((sum, meal: any) => sum + (meal.protein || 0), 0),
+  todayNutrition.value.reduce((sum, meal) => sum + (meal.protein || 0), 0),
 );
 const totalCarbs = computed(() =>
-  todayNutrition.value.reduce((sum, meal: any) => sum + (meal.carbs || 0), 0),
+  todayNutrition.value.reduce((sum, meal) => sum + (meal.carbs || 0), 0),
 );
 
 /**
@@ -651,15 +646,12 @@ const fatDelta = computed(() =>
   clientId.value ? metricsStore.getDelta(clientId.value, 'bodyFatPct') : null,
 );
 
-const waistDelta = computed(() =>
-  clientId.value ? metricsStore.getDelta(clientId.value, 'waistCm') : null,
-);
 
 /**
  * ✅ Streak: días seguidos con trainingLogs
  */
 
-function calcCurrentStreak(logs: { date: any }[], allowSkipToday = true) {
+function calcCurrentStreak(logs: { date: string | number | Date }[], allowSkipToday = true) {
   const days = new Set(logs.map((l) => dayKey(l.date)));
 
   const base = new Date();
@@ -694,7 +686,7 @@ const todayWorkout = computed(() => {
 
   if (!plan) return null;
 
-  const week = plan.weeks?.find((w) => w.weekNumber === getActiveWeekIndexFromAssignedAt(new Date(), plan.startDate?.toDate() ?? new Date(), 4)) ?? plan.weeks?.[0];
+  const week = plan.weeks?.find((w) => w.weekNumber === getActiveWeekIndexFromAssignedAt(new Date(), plan.startDate instanceof Date ? plan.startDate : new Date(plan.startDate ?? Date.now()), 4)) ?? plan.weeks?.[0];
   const day = week?.days?.find((d) => d.day === dayKeyToday.value);
   if (!day) return null;
 
@@ -749,10 +741,6 @@ const dayProgress = computed(() => {
 });
 
 
-
-// suppress unused warning — greetingMessage & waistDelta kept for store compatibility
-void greetingMessage;
-void waistDelta;
 </script>
 
 <style scoped>

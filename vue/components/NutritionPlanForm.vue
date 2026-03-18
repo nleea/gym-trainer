@@ -2,38 +2,25 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { NutritionDay, NutritionPlan, Meal, MealType } from '@/types';
-import { useDataStore } from '../stores/data';
+import { usePlansStore } from '../stores/plan.store';
 import { useClientsStore } from '../stores/clients.store';
 
 const route = useRoute();
 const router = useRouter();
-const dataStore = useDataStore();
+const plansStore = usePlansStore();
 const clientStore = useClientsStore();
 
 const clientId = route.params.clientId as string | undefined;
 
 const props = defineProps<{
-  modelValue?: any | null;
+  modelValue?: NutritionPlan | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: any): void;
+  (e: 'update:modelValue', v: NutritionPlan): void;
   (e: 'saved', payload: { id: string }): void;
 }>();
 
-const planName = ref('');
-const planDescription = ref('');
-
-const targetCalories = ref<number | null>(null);
-const targetProtein = ref<number | null>(null);
-const targetCarbs = ref<number | null>(null);
-const targetFat = ref<number | null>(null);
-
-const recommendedFoods = ref<string[]>([]);
-const forbiddenFoods = ref<string[]>([]);
-const guidelines = ref<string[]>([]);
-
-const days = ref<NutritionDay[]>([]);
 
 const daysOfWeek = [
   { key: 'lunes',     label: 'Lunes',     short: 'Lun' },
@@ -83,10 +70,10 @@ const plan = computed<NutritionPlan>({
 });
 
 const isTemplateEditing = computed(
-  () => Boolean((plan.value as any).isTemplate || (plan.value as any).is_template),
+  () => Boolean(plan.value.isTemplate || plan.value.sourceTemplateId),
 );
 const sourceTemplateLabel = computed(() => {
-  const source = (plan.value as any).sourceTemplateId || (plan.value as any).source_template_id;
+  const source = plan.value.sourceTemplateId;
   return source ? String(source) : 'Sin origen';
 });
 
@@ -108,7 +95,7 @@ function mealEmoji(type: MealType) {
 }
 
 onMounted(async () => {
-  await dataStore.loadNutritionsPlans();
+  await plansStore.loadNutritionPlans();
 
   if (!props.modelValue) {
     plan.value = defaultPlan();
@@ -116,7 +103,7 @@ onMounted(async () => {
 
   const idFromRoute = route.params.id as string | undefined;
   if (idFromRoute) {
-    const p = dataStore.getNutritionPlan(idFromRoute);
+    const p = plansStore.getNutritionPlanLocal(idFromRoute);
     if (p) plan.value = deepClone(p);
   }
 
@@ -208,8 +195,8 @@ function addMeal() {
     carbs: newMeal.value.carbs,
     fat: newMeal.value.fat,
     ingredients: (newMeal.value.ingredients as string[]) || [],
-    date: null as any,
-    createdAt: null as any,
+    date: '' as string | Date,
+    createdAt: '' as string | Date,
   };
 
   plan.value.days[currentDayIndex.value].meals.push(meal);
@@ -258,7 +245,7 @@ const handleSave = async () => {
       water_ml: plan.value.water_ml ?? undefined,
       recommendedFoods: plan.value.recommendedFoods,
       forbiddenFoods: plan.value.forbiddenFoods,
-      guidelines: plan.value.guidelines as any,
+      guidelines: plan.value.guidelines,
       days: plan.value.days ?? [],
     };
 
@@ -266,7 +253,7 @@ const handleSave = async () => {
       await clientStore.updateNutritionPlan(clientId, plan.value.id, payload);
       emit('saved', { id: plan.value.id });
     } else {
-      const newId = await dataStore.addnutritionPlan(payload);
+      const newId = await plansStore.addNutritionPlan(payload);
       plan.value = { ...plan.value, id: newId.id! };
       emit('saved', { id: newId.id ?? '' });
     }

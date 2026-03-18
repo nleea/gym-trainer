@@ -12,12 +12,24 @@ export type Exercise = {
   notes?: string;
   description?: string;
   active: boolean;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
+interface RawExercise {
+  id: string;
+  name: string;
+  muscle_group?: string;
+  body_part?: string;
+  equipment?: string;
+  description?: string;
+  target?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Mapeo de snake_case (backend) a camelCase (frontend)
-function mapExercise(raw: any): Exercise {
+function mapExercise(raw: RawExercise): Exercise {
   return {
     id: raw.id,
     name: raw.name,
@@ -37,7 +49,7 @@ export function useExerciseLibrary(_coachId?: string) {
   async function start() {
     loading.value = true;
     try {
-      const data = await api.get<{ items: any[] }>("/exercises?limit=100&offset=0");
+      const data = await api.get<{ items: RawExercise[] }>("/exercises?limit=100&offset=0");
       library.value = (data.items ?? []).map(mapExercise);
     } catch {
       library.value = [];
@@ -49,7 +61,7 @@ export function useExerciseLibrary(_coachId?: string) {
   function stop() {}
 
   async function createExercise(payload: Omit<Exercise, "id" | "createdAt" | "updatedAt">) {
-    const raw = await api.post<any>("/exercises", {
+    const raw = await api.post<RawExercise>("/exercises", {
       name: payload.name,
       muscle_group: payload.muscleGroup,
       description: payload.description ?? payload.notes ?? null,
@@ -60,7 +72,7 @@ export function useExerciseLibrary(_coachId?: string) {
   }
 
   async function updateExercise(exerciseId: string, patch: Partial<Exercise>) {
-    const raw = await api.put<any>(`/exercises/${exerciseId}`, {
+    const raw = await api.put<RawExercise>(`/exercises/${exerciseId}`, {
       name: patch.name,
       muscle_group: patch.muscleGroup,
       description: patch.description ?? patch.notes ?? undefined,

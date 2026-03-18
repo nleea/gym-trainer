@@ -24,8 +24,9 @@ import { getActiveWeekIndexFromAssignedAt } from '../../../lib/helpers';
 import TaskCalendar from '../../components/taskCalendar.vue';
 import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 
-import type { TrainingLog } from '../../types';
+import type { TrainingPlan, TrainingLog, TrainingWeek, TrainingDay, Exercise, ExerciseLog, Meal, MealLog, NutritionDay } from '../../types';
 
+type ExerciseSet = ExerciseLog['sets'][number];
 type DayStatus = 'completed' | 'planned' | 'rest' | 'empty';
 type NutritionStatus = 'completed' | 'planned' | 'empty';
 type PanelView = 'workout' | 'nutrition';
@@ -62,9 +63,10 @@ const trainingPlan = computed(() =>
 );
 
 function planAssignedAt(): Date | null {
-  const sd = (trainingPlan.value as any)?.startDate;
+  const sd = (trainingPlan.value as TrainingPlan | null)?.startDate;
   if (!sd) return null;
-  if (typeof sd?.toDate === 'function') return sd.toDate();
+  if (typeof (sd as unknown as { toDate?: () => Date })?.toDate === 'function')
+    return (sd as unknown as { toDate: () => Date }).toDate();
   if (sd instanceof Date) return sd;
   return new Date(sd);
 }
@@ -80,7 +82,7 @@ function weekForDate(date: Date) {
     plan.weeks.length,
   );
   return (
-    plan.weeks.find((w: any) => Number(w.weekNumber) === weekNum) ??
+    plan.weeks.find((w: TrainingWeek) => Number(w.weekNumber) === weekNum) ??
     plan.weeks[0] ??
     null
   );
@@ -89,10 +91,10 @@ function weekForDate(date: Date) {
 function planDayFor(date: Date) {
   const week = weekForDate(date);
   const key = DAY_KEYS[getDay(date)];
-  return week?.days?.find((d: any) => d.day === key) ?? null;
+  return week?.days?.find((d: TrainingDay) => d.day === key) ?? null;
 }
 
-function planExercisesForDate(date: Date): any[] {
+function planExercisesForDate(date: Date): Exercise[] {
   return planDayFor(date)?.exercises ?? [];
 }
 
@@ -101,13 +103,18 @@ const nutritionPlan = computed(() =>
   plansStore.getClientNutritionPlan(clientId.value),
 );
 
-function mealsForDate(date: Date): any[] {
+function mealsForDate(date: Date): Meal[] {
   const plan = nutritionPlan.value;
   if (!plan) return [];
   const key = DAY_KEYS[getDay(date)];
   // flat days structure (weekly cycle)
-  const day = plan.days?.find((d: any) => d.day === key);
+  const day = plan.days?.find((d: NutritionDay) => d.day === key);
   return day?.meals ?? [];
+}
+
+function mealKeyForDate(date: Date, meal: Meal, idx: number): string {
+  const key = DAY_KEYS[getDay(date)];
+  return `${key}_${meal?.type ?? 'meal'}_${idx}`;
 }
 
 // ── Logs ──────────────────────────────────────────────────────────────────
@@ -115,13 +122,43 @@ const allLogs = computed(
   () => (logsStore.getAllClientLogs(clientId.value) ?? []) as TrainingLog[],
 );
 
+const allMealLogs = computed(
+  () => (logsStore.getAllClientMealLogs(clientId.value) ?? []) as MealLog[],
+);
+
 function logForDate(date: Date): TrainingLog | null {
   return (
     allLogs.value.find((l) => {
-      const ld = toJsDate((l as any).date);
+      const ld = toJsDate(l.date);
       return ld ? isSameLocalDay(ld, date) : false;
     }) ?? null
   );
+}
+
+function mealLogsForDate(date: Date): MealLog[] {
+  return allMealLogs.value.filter((log: MealLog) => {
+    const ld = toJsDate(log.date);
+    return ld ? isSameLocalDay(ld, date) : false;
+  });
+}
+
+function mealStatusFor(date: Date): NutritionStatus {
+  const meals = mealsForDate(date);
+  if (!meals.length) return 'empty';
+
+  const logs = mealLogsForDate(date);
+  const loggedMealKeys = new Set(
+    logs
+      .map((log: MealLog & { meal_key?: string }) => log.mealKey ?? log.meal_key)
+      .filter(Boolean),
+  );
+
+  const plannedMealKeys = meals.map((meal: Meal, idx: number) =>
+    mealKeyForDate(date, meal, idx),
+  );
+  const completed = plannedMealKeys.filter((key) => loggedMealKeys.has(key)).length;
+
+  return completed >= plannedMealKeys.length ? 'completed' : 'planned';
 }
 
 // ── Day status ─────────────────────────────────────────────────────────────
@@ -159,27 +196,26 @@ const selectedLog = computed(() => logForDate(selectedDate.value));
 const isSelectedToday = computed(() => isSameDay(selectedDate.value, today));
 const selectedMeals = computed(() => mealsForDate(selectedDate.value));
 const selectedMealLogs = computed(() => {
-  const weekLogs =
-    logsStore.getClientMealsWeekCached(clientId.value, selectedDate.value) ?? [];
-  return weekLogs.filter((log: any) => {
-    const logDate = toJsDate(log.date);
-    return logDate ? isSameLocalDay(logDate, selectedDate.value) : false;
-  });
+  return mealLogsForDate(selectedDate.value);
 });
-const selectedLoggedMealTypes = computed(
-  () => new Set(selectedMealLogs.value.map((log: any) => log.type)),
+const selectedLoggedMealKeys = computed(
+  () =>
+    new Set(
+      selectedMealLogs.value
+        .map((log: MealLog & { meal_key?: string }) => log.mealKey ?? log.meal_key)
+        .filter(Boolean),
+    ),
 );
 const selectedMealsDetailed = computed(() =>
-  selectedMeals.value.map((meal: any) => ({
+  selectedMeals.value.map((meal: Meal, idx: number) => ({
     ...meal,
-    registered: selectedLoggedMealTypes.value.has(meal.type),
+    registered: selectedLoggedMealKeys.value.has(
+      mealKeyForDate(selectedDate.value, meal, idx),
+    ),
   })),
 );
 const selectedNutritionStatus = computed<NutritionStatus>(() => {
-  if (!selectedMeals.value.length) return 'empty';
-  const completed = selectedMealsDetailed.value.filter((meal: any) => meal.registered)
-    .length;
-  return completed >= selectedMeals.value.length ? 'completed' : 'planned';
+  return mealStatusFor(selectedDate.value);
 });
 const selectedStatus = computed(() =>
   panelView.value === 'nutrition'
@@ -193,24 +229,24 @@ const selectedLogStats = computed(() => {
   if (!log) return null;
   const exs = log.exercises ?? [];
   const volume = exs.reduce(
-    (sum, ex: any) =>
+    (sum, ex: ExerciseLog) =>
       sum +
       (ex.sets ?? []).reduce(
-        (s: number, set: any) => s + (set.reps ?? 0) * (set.weight ?? 0),
+        (s: number, set: ExerciseSet) => s + (set.reps ?? 0) * (set.weight ?? 0),
         0,
       ),
     0,
   );
-  const totalSets = exs.reduce((s, ex: any) => s + (ex.sets?.length ?? 0), 0);
+  const totalSets = exs.reduce((s, ex: ExerciseLog) => s + (ex.sets?.length ?? 0), 0);
   const completedSets = exs.reduce(
-    (s, ex: any) =>
-      s + (ex.sets ?? []).filter((set: any) => set.completed).length,
+    (s, ex: ExerciseLog) =>
+      s + (ex.sets ?? []).filter((set: ExerciseSet) => set.completed).length,
     0,
   );
   const maxWeight = Math.max(
     0,
-    ...exs.flatMap((ex: any) =>
-      (ex.sets ?? []).map((set: any) => Number(set.weight ?? 0)),
+    ...exs.flatMap((ex: ExerciseLog) =>
+      (ex.sets ?? []).map((set: ExerciseSet) => Number(set.weight ?? 0)),
     ),
   );
   return {
@@ -219,8 +255,8 @@ const selectedLogStats = computed(() => {
     completedSets,
     maxWeight,
     exercises: exs.length,
-    effort: (log as any).effort,
-    duration: (log as any).duration,
+    effort: log.effort,
+    duration: log.duration,
   };
 });
 
@@ -251,23 +287,14 @@ watch(
     loading.value = true;
     try {
       await Promise.all([
-        plansStore.fetchClientTrainingPlan(id, pId),
-        plansStore.fetchClientNutritionPlan(id),
+        plansStore.fetchClientTrainingPlan(id, pId ?? ''),
+        plansStore.fetchClientNutritionPlan(id, user.value?.nutrition_plan ?? ''),
         logsStore.loadAllClientLogs(id),
-        logsStore.loadMealsLogWeek(id, new Date()),
+        logsStore.loadAllClientMealLogs(id, true),
       ]);
     } finally {
       loading.value = false;
     }
-  },
-  { immediate: true },
-);
-
-watch(
-  [clientId, selectedDate],
-  async ([id, day]) => {
-    if (!id) return;
-    await logsStore.loadMealsLogWeek(id, day);
   },
   { immediate: true },
 );
@@ -333,6 +360,7 @@ watch(
       :exercises="planExercisesForDate"
       :log="logForDate"
       :meals-for-date="nutritionPlan ? mealsForDate : undefined"
+      :meal-status-for-date="nutritionPlan ? mealStatusFor : undefined"
       @open-day="openPanel"
     />
 

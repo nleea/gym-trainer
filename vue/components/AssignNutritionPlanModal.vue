@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import type { NutritionPlan, NutritionDay } from '@/types';
+import type { NutritionPlan } from '@/types';
 import { usePlansStore } from '../stores/plan.store';
 import { useClientsStore } from '../stores/clients.store';
 
@@ -55,35 +55,12 @@ watch(
   },
 );
 
-const templates = computed(() => (nutritionPlans.value || []).filter((p: any) => p.isTemplate !== false));
+const templates = computed(() => (nutritionPlans.value || []).filter((p: NutritionPlan) => p.isTemplate !== false));
 
 const selectedPlan = computed(() =>
   templates.value.find((p: NutritionPlan) => p.id === selectedTemplateId.value),
 );
 
-// -------- helpers counts --------
-function countMeals(days: NutritionDay[]) {
-  return (days || []).reduce((acc, d) => acc + (d.meals?.length || 0), 0);
-}
-
-const planSummary = computed(() => {
-  const p = selectedPlan.value as NutritionPlan | undefined;
-  if (!p) return null;
-
-  const days = p.days || [];
-  const meals = countMeals(days);
-
-  return {
-    days: days.length,
-    meals,
-    targets: [
-      p.targetCalories,
-      p.targetProtein,
-      p.targetCarbs,
-      p.targetFat,
-    ].some((x) => x !== undefined && x !== null),
-  };
-});
 
 const canAssign = computed(() => {
   return (

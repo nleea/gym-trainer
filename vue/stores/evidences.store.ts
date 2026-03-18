@@ -70,8 +70,8 @@ export const useEvidencesStore = defineStore('evidences', {
         const week = await listEvidencesByClientWeek(params)
         this.clientEvidencesByWeek[key] = week
         return week
-      } catch (e: any) {
-        const msg = String(e?.message ?? '').toLowerCase()
+      } catch (e: unknown) {
+        const msg = (e instanceof Error ? e.message : String(e)).toLowerCase()
         const isNotFound = msg.includes('404') || msg.includes('not found') || msg.includes('no encontrado')
         if (isNotFound) {
           const empty = {

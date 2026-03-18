@@ -106,8 +106,8 @@ async function submitFeedback(payload: { feedback: string; rating: 'correct' | '
     openFeedback.value = false
     selected.value = null
     await store.loadPendingCount(props.clientId)
-  } catch (e: any) {
-    toast.error(e?.message || 'No se pudo enviar feedback')
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : 'No se pudo enviar feedback')
   }
 }
 </script>

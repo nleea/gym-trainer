@@ -1,4 +1,4 @@
-<!-- src/components/ClientMetricsView.vue -->
+<!-- vue/views/client/MetricsView.vue -->
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useMetricsStore } from '@/stores/metrics.store';
@@ -6,7 +6,7 @@ import type { BodyMetricsEntry } from '@/types';
 import { parseYmdLocal, toJsDate, toYmdLocal } from '../../../lib/utils';
 import { useAuthStore } from '../../stores/auth';
 import { useI18n } from 'vue-i18n';
-import { uploadMetricPhotoToR2 } from '../../repo/metricsrepo';
+import { uploadMetricPhotoToR2 } from '../../repo/metricsRepo';
 import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 
 const { t } = useI18n();
@@ -35,43 +35,43 @@ const form = reactive({
   date: new Date(),
 
   // composición
-  weightKg: '' as any,
-  bodyFatPct: '' as any,
-  musclePct: '' as any,
-  waterPct: '' as any,
-  visceralFat: '' as any,
-  boneMassKg: '' as any,
-  bmrKcal: '' as any,
+  weightKg: '' as string | number,
+  bodyFatPct: '' as string | number,
+  musclePct: '' as string | number,
+  waterPct: '' as string | number,
+  visceralFat: '' as string | number,
+  boneMassKg: '' as string | number,
+  bmrKcal: '' as string | number,
 
   // torso
-  neckCm: '' as any,
-  shouldersCm: '' as any,
-  chestCm: '' as any,
-  underChestCm: '' as any,
-  waistCm: '' as any,
-  abdomenCm: '' as any,
-  hipsCm: '' as any,
+  neckCm: '' as string | number,
+  shouldersCm: '' as string | number,
+  chestCm: '' as string | number,
+  underChestCm: '' as string | number,
+  waistCm: '' as string | number,
+  abdomenCm: '' as string | number,
+  hipsCm: '' as string | number,
 
   // brazos
-  armRelaxedLeftCm: '' as any,
-  armRelaxedRightCm: '' as any,
-  armFlexedLeftCm: '' as any,
-  armFlexedRightCm: '' as any,
-  forearmLeftCm: '' as any,
-  forearmRightCm: '' as any,
+  armRelaxedLeftCm: '' as string | number,
+  armRelaxedRightCm: '' as string | number,
+  armFlexedLeftCm: '' as string | number,
+  armFlexedRightCm: '' as string | number,
+  forearmLeftCm: '' as string | number,
+  forearmRightCm: '' as string | number,
 
   // piernas
-  thighLeftCm: '' as any,
-  thighRightCm: '' as any,
-  calfLeftCm: '' as any,
-  calfRightCm: '' as any,
+  thighLeftCm: '' as string | number,
+  thighRightCm: '' as string | number,
+  calfLeftCm: '' as string | number,
+  calfRightCm: '' as string | number,
 
   notes: '',
   measurementProtocol: 'navel' as 'navel' | 'natural_waist',
   photosCsv: '',
 });
 
-function n(v: any): number | null {
+function n(v: string | number | null | undefined): number | null {
   if (v === '' || v === undefined || v === null) return null;
   const num = Number(v);
   return Number.isFinite(num) ? num : null;
@@ -114,8 +114,8 @@ async function onPhotoFilesSelected(event: Event) {
     }
     setPhotoUrls(next);
     uploadMsg.value = `${files.length} foto(s) subida(s) correctamente`;
-  } catch (e: any) {
-    formError.value = e?.message ?? 'No se pudieron subir las imágenes';
+  } catch (e: unknown) {
+    formError.value = e instanceof Error ? e.message : 'No se pudieron subir las imágenes';
   } finally {
     uploadingPhotos.value = false;
     input.value = '';
@@ -133,8 +133,8 @@ function resetForm() {
   const keys = Object.keys(form) as (keyof typeof form)[];
   for (const k of keys) {
     if (k === 'date') continue;
-    if (k === 'measurementProtocol') form[k] = 'navel' as any;
-    else form[k] = '' as any;
+    if (k === 'measurementProtocol') (form[k] as string) = 'navel';
+    else (form[k] as string) = '';
   }
   form.notes = '';
   form.photosCsv = '';
@@ -177,7 +177,7 @@ function fillFormFromEntry(e: BodyMetricsEntry) {
   form.calfRightCm = e.calfRightCm ?? '';
 
   form.notes = e.notes ?? '';
-  form.measurementProtocol = (e.measurementProtocol ?? 'navel') as any;
+  form.measurementProtocol = e.measurementProtocol ?? 'navel';
   form.photosCsv = (e.photos ?? []).join('\n');
 }
 
@@ -280,7 +280,7 @@ const latestPhotos = computed(() => {
   return last?.photos ?? [];
 });
 
-function fmt(v: any, suffix = '') {
+function fmt(v: string | number | null | undefined, suffix = '') {
   if (v === null || v === undefined) return '—';
   return `${v}${suffix}`;
 }
@@ -291,7 +291,7 @@ function fmtChange(v: number | null) {
   return `${sign}${v.toFixed(1)}`;
 }
 
-function fmtDate(d: any) {
+function fmtDate(d: string | Date) {
   const js = toJsDate(d);
   if (!js) return '—';
   return js.toLocaleDateString();
@@ -359,12 +359,12 @@ async function onSubmit() {
     } else {
       const id = editingId.value;
       if (!id) throw new Error('No entry id to update');
-      await metricsStore.updateEntry(props.clientId, id, payloadBase as any);
+      await metricsStore.updateEntry(props.clientId, id, payloadBase as Partial<BodyMetricsEntry>);
       successMsg.value = t('client.metrics.validation.updated');
       resetForm();
     }
-  } catch (e: any) {
-    formError.value = e?.message ?? t('common.error');
+  } catch (e: unknown) {
+    formError.value = e instanceof Error ? e.message : t('common.error');
   } finally {
     saving.value = false;
   }
@@ -376,8 +376,8 @@ async function onDelete(entryId: string) {
   try {
     await metricsStore.removeEntry(props.clientId, entryId);
     if (editingId.value === entryId) resetForm();
-  } catch (e: any) {
-    alert(e?.message ?? t('client.metrics.validation.deleteError'));
+  } catch (e: unknown) {
+    alert(e instanceof Error ? e.message : t('client.metrics.validation.deleteError'));
   }
 }
 
@@ -607,7 +607,7 @@ onMounted(load);
             :value="toYmdLocal(form.date)"
             type="date"
             class="mt-1 w-full border rounded-lg px-3 py-2"
-            @input="(e: any) => (form.date = parseYmdLocal(e.target.value))"
+            @input="(e: Event) => (form.date = parseYmdLocal((e.target as HTMLInputElement).value))"
           />
         </label>
 
@@ -764,7 +764,7 @@ onMounted(load);
             :value="toYmdLocal(form.date)"
             type="date"
             class="mt-1 w-full border rounded-lg px-3 py-2 bg-background text-foreground"
-            @input="(e: any) => (form.date = parseYmdLocal(e.target.value))"
+            @input="(e: Event) => (form.date = parseYmdLocal((e.target as HTMLInputElement).value))"
           />
         </label>
 

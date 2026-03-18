@@ -50,8 +50,8 @@ export const useAttendanceStore = defineStore("attendance", {
       this.error = null
       try {
         this.attendance = await listAttendance()
-      } catch (e: any) {
-        this.error = e?.message ?? "Error loading attendance"
+      } catch (e: unknown) {
+        this.error = e instanceof Error ? e.message : "Error loading attendance"
         throw e
       } finally {
         this.loading = false

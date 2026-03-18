@@ -8,7 +8,11 @@ function toISO(d: Date): string {
   return toYmdLocal(d)
 }
 
-function mapAttendance(d: any): Attendance {
+interface RawAttendance extends Record<string, unknown> {
+  date?: unknown
+}
+
+function mapAttendance(d: RawAttendance): Attendance {
   return {
     ...d,
     date: toDate(d.date) ?? new Date(),
@@ -26,12 +30,12 @@ export async function markAttendance(data: Attendance): Promise<string> {
 }
 
 export async function listAttendanceByClient(clientId: string): Promise<Attendance[]> {
-  const list = await api.get<any[]>(`/attendance/${clientId}`)
+  const list = await api.get<RawAttendance[]>(`/attendance/${clientId}`)
   return list.map(mapAttendance)
 }
 
 export async function listAttendance(): Promise<Attendance[]> {
-  const list = await api.get<any[]>(`/attendance/trainer/`)
+  const list = await api.get<RawAttendance[]>(`/attendance/trainer/`)
   return list.map(mapAttendance)
 }
 

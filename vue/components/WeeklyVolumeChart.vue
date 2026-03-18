@@ -31,8 +31,8 @@ async function load() {
   error.value = null
   try {
     data.value = await api.get<WeekPoint[]>(`/clients/${props.clientId}/weekly-volume`)
-  } catch (e: any) {
-    error.value = e?.message ?? 'Error al cargar el volumen semanal'
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Error al cargar el volumen semanal'
   } finally {
     loading.value = false
   }
@@ -95,15 +95,15 @@ const chartOptions = computed(() => ({
       mode: 'index' as const,
       intersect: false,
       callbacks: {
-        title: (items: any[]) => {
+        title: (items: { dataIndex: number }[]) => {
           const idx = items[0]?.dataIndex ?? -1
           const point = data.value[idx]
           if (!point) return ''
           const label = fmtWeek(point.week)
           return point.week === thisWeek ? `${label} (semana en curso)` : label
         },
-        label: (item: any) => {
-          const val: number = item.raw ?? 0
+        label: (item: { raw: unknown }) => {
+          const val: number = (item.raw as number) ?? 0
           return ` ${val.toLocaleString('es-ES')} kg`
         },
       },
@@ -114,7 +114,7 @@ const chartOptions = computed(() => ({
     y: {
       beginAtZero: true,
       ticks: {
-        callback: (val: any) => `${Number(val).toLocaleString('es-ES')} kg`,
+        callback: (val: string | number) => `${Number(val).toLocaleString('es-ES')} kg`,
       },
     },
     x: { ticks: { maxRotation: 0 } },

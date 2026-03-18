@@ -36,11 +36,6 @@ function toggleExpand(id: string) {
   else expandedWorkouts.value.push(id)
 }
 
-function formatDate(iso: string) {
-  return new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
 
 function formatMonthYear(iso: string) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })

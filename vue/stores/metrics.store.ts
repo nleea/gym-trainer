@@ -9,7 +9,7 @@ import {
   deleteMetricsEntry,
   type MetricsSummary,
   type SeriesPoint,
-} from "../repo/metricsrepo"
+} from "../repo/metricsRepo"
 
 type SeriesPointJs = { date: Date; value: number }
 
@@ -20,7 +20,7 @@ function isSummaryField(field: string): field is SummaryField {
   return (SUMMARY_FIELDS as readonly string[]).includes(field)
 }
 
-function safeNumber(v: any): number | null {
+function safeNumber(v: unknown): number | null {
   if (v === undefined || v === null || v === "") return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
@@ -35,14 +35,14 @@ function computeDeltaFromHistory(rows: BodyMetricsEntry[], field: keyof BodyMetr
     .filter(x => !!x.d)
     .sort((a, b) => (a.d as Date).getTime() - (b.d as Date).getTime())
 
-  const filtered = ordered.filter(x => safeNumber((x.r as any)[field]) != null)
+  const filtered = ordered.filter(x => safeNumber(x.r[field]) != null)
   if (!filtered.length) return null
 
   const last = filtered[filtered.length - 1]
   const prev = filtered.length > 1 ? filtered[filtered.length - 2] : null
 
-  const lastVal = safeNumber((last.r as any)[field])
-  const prevVal = prev ? safeNumber((prev.r as any)[field]) : null
+  const lastVal = safeNumber(last.r[field])
+  const prevVal = prev ? safeNumber(prev.r[field]) : null
 
   return {
     lastDate: last.d as Date,
@@ -62,7 +62,7 @@ function computeSeriesFromHistory(
   for (const r of rows) {
     const d = toJsDate(r.date)
     if (!d) continue
-    const v = safeNumber((r as any)[field])
+    const v = safeNumber(r[field])
     if (v == null) continue
     pts.push({ date: d, value: v })
   }
@@ -144,8 +144,8 @@ export const useMetricsStore = defineStore("metrics", {
           const summary = await getMetricsSummary(clientId)
           this.summaryByClient[clientId] = summary
           return summary
-        } catch (e: any) {
-          this.errorByClient[clientId] = e?.message ?? "Error loading metrics"
+        } catch (e: unknown) {
+          this.errorByClient[clientId] = e instanceof Error ? e.message : "Error loading metrics"
           this.summaryByClient[clientId] = null
           throw e
         } finally {

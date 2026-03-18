@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import type { TrainingWeek } from '@/types';
+import type { TrainingPlan, TrainingWeek } from '@/types';
 import { usePlansStore } from '../stores/plan.store';
 import { useClientsStore } from '../stores/clients.store';
 
@@ -52,7 +52,7 @@ watch(
   },
 );
 
-const templates = computed(() => (trainingPlans.value || []).filter((p: any) => p.isTemplate !== false));
+const templates = computed(() => (trainingPlans.value || []).filter((p: TrainingPlan) => p.isTemplate !== false));
 
 const selectedPlan = computed(() =>
   templates.value.find((p) => p.id === selectedTemplateId.value),

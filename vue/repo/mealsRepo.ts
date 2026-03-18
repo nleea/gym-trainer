@@ -8,7 +8,17 @@ function toISO(d: Date): string {
   return toYmdLocal(d)
 }
 
-function mapLog(d: any): MealLog {
+interface RawMealLog extends Record<string, unknown> {
+  clientId?: string
+  client_id?: string
+  trainerId?: string
+  trainer_id?: string
+  mealKey?: string
+  meal_key?: string
+  date?: unknown
+}
+
+function mapLog(d: RawMealLog): MealLog {
   return {
     ...d,
     clientId: d.clientId ?? d.client_id,
@@ -33,7 +43,7 @@ export async function createMealLog(
   return res.id
 }
 
-export async function upsertMealLog(id: string, log: any): Promise<string> {
+export async function upsertMealLog(id: string, log: MealLog): Promise<string> {
   try {
     await api.put(`/meal-logs/${id}`, {
       ...log,
@@ -51,9 +61,14 @@ export async function listMealLogsByClientRange(
   start: Date,
   end: Date
 ): Promise<MealLog[]> {
-  const list = await api.get<any[]>(
+  const list = await api.get<RawMealLog[]>(
     `/meal-logs?client_id=${clientId}&start=${toISO(start)}&end=${toISO(end)}`
   )
+  return list.map(mapLog)
+}
+
+export async function listMealLogsByClient(clientId: string): Promise<MealLog[]> {
+  const list = await api.get<RawMealLog[]>(`/meal-logs?client_id=${clientId}`)
   return list.map(mapLog)
 }
 
@@ -90,12 +105,14 @@ export async function findMealLogTodayByType(
 export async function listMealLogsByTrainerWeek(
   _trainerId: string,
   anchorDate = new Date()
-): Promise<any[]> {
+): Promise<MealLog[]> {
   const { start, end } = getWeekRange(anchorDate)
   try {
-    return await api.get<any[]>(`/meal-logs?start=${toISO(start)}&end=${toISO(end)}`)
-  } catch (err: any) {
-    console.error('listMealLogsByTrainerWeek error:', err?.message)
+    const list = await api.get<RawMealLog[]>(`/meal-logs?start=${toISO(start)}&end=${toISO(end)}`)
+    return list.map(mapLog)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('listMealLogsByTrainerWeek error:', message)
     return []
   }
 }

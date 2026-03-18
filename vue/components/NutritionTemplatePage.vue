@@ -53,5 +53,5 @@ const save = async () => {
 </script>
 
 <template>
-  <NutritionPlanForm v-model="plan" @save="save" />
+  <NutritionPlanForm v-model="(plan as NutritionPlan)" @save="save" />
 </template>

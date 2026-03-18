@@ -64,11 +64,11 @@ export interface TrainingPlan {
   isTemplate?: boolean
   clientId?: string | null
   sourceTemplateId?: string | null
-  assignedAt?: any
+  assignedAt?: string | Date
   copiesCount?: number | null
   createdAt: Date
   updatedAt: Date
-  startDate?: any
+  startDate?: string | Date
 }
 
 export interface AssignedTrainingPlan {
@@ -139,6 +139,12 @@ export interface WeeklyEvidencesResponse {
 }
 
 // Nutrition
+export interface MealFood {
+  name: string
+  quantity: string
+  calories: number
+}
+
 export type MealType = "desayuno" | "almuerzo" | "cena" | "snack";
 export interface Meal {
   id?: string
@@ -150,8 +156,10 @@ export interface Meal {
   carbs?: number
   fat?: number
   ingredients?: string[]
-  date: any;
-  createdAt?: any;
+  notes?: string | null
+  foods?: MealFood[] | null
+  date: string | Date;
+  createdAt?: string | Date;
 }
 
 export interface NutritionDay {
@@ -179,11 +187,11 @@ export interface NutritionPlan {
   forbiddenFoods?: string[]
   createdAt: Date
   updatedAt: Date
-  guidelines?: Array<any>
+  guidelines?: Array<string>
   isTemplate?: boolean
   clientId?: string | null
   sourceTemplateId?: string | null
-  assignedAt?: any
+  assignedAt?: string | Date
   copiesCount?: number | null
 }
 
@@ -271,7 +279,7 @@ export interface ProgressEntry {
 export type BodyMetricsEntry = {
   id?: string
   clientId: string
-  date: any // ideal Date ya normalizado
+  date: string | Date // ideal Date ya normalizado
 
   // --- composición ---
   weightKg?: number | null

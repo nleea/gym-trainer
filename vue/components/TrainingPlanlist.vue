@@ -4,10 +4,10 @@ import { RouterLink } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 
-import { useDataStore } from '../stores/data';
+import { usePlansStore } from '../stores/plan.store';
 
 const authStore = useAuthStore();
-const dataStore = useDataStore();
+const plansStore = usePlansStore();
 const { user } = storeToRefs(authStore);
 
 const coachId = computed(() => user.value?.uid || '');
@@ -23,14 +23,14 @@ watch(
   coachId,
   (id) => {
     if (!id) return;
-    dataStore.loadTrainingPlans();
+    plansStore.loadTrainingPlans();
   },
   { immediate: true },
 );
 
 const filteredLibrary = computed(() => {
   const q = search.value.trim().toLowerCase();
-  return dataStore.trainingPlans.filter((ex) => {
+  return plansStore.trainingPlans.filter((ex) => {
     const matchSearch = !q || ex.name.toLowerCase().includes(q);
     return matchSearch;
   });
@@ -38,7 +38,7 @@ const filteredLibrary = computed(() => {
 
 function toggleSelect(id: string) {
   const set = new Set<string>(selectedIds.value);
-  set.has(id) ? set.clear() : set.add(id);
+  if (set.has(id)) { set.clear() } else { set.add(id) }
   selectedIds.value = set;
 }
 

@@ -243,8 +243,8 @@ async function submit() {
     )
     emit('uploaded', photo)
     close()
-  } catch (e: any) {
-    uploadError.value = e.message ?? 'Error al subir la foto'
+  } catch (e: unknown) {
+    uploadError.value = e instanceof Error ? e.message : 'Error al subir la foto'
   } finally {
     uploading.value = false
   }

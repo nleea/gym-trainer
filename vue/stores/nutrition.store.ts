@@ -40,8 +40,8 @@ export const useNutritionStore = defineStore('nutrition', {
         const data = await getNutritionSummary(clientId, date)
         this.summaryByKey[k] = data
         return data
-      } catch (e: any) {
-        this.errorByKey[k] = e?.message ?? 'Error'
+      } catch (e: unknown) {
+        this.errorByKey[k] = e instanceof Error ? e.message : 'Error'
         this.summaryByKey[k] = null
         return null
       } finally {

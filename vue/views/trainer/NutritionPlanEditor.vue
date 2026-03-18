@@ -27,7 +27,7 @@
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label v-for="f in macroFields" :key="f.key" class="space-y-1">
           <span class="text-xs text-muted-foreground">{{ f.label }}</span>
-          <input v-model.number="(form as any)[f.key]" type="number" :placeholder="f.placeholder"
+          <input v-model.number="(form as Record<string, unknown>)[f.key]" type="number" :placeholder="f.placeholder"
             class="w-full rounded-lg border bg-background px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
         </label>
       </div>
@@ -148,10 +148,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../../api'
 import { getNutritionPlanById } from '../../repo/nutritionPlan'
+import type { MealFood } from '../../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -186,7 +187,7 @@ interface MealForm {
   carbs?: number
   fat?: number
   notes?: string
-  foods?: any[]
+  foods?: MealFood[]
 }
 
 const emptyDays = () =>
@@ -227,18 +228,19 @@ onMounted(async () => {
   const plan = await getNutritionPlanById(planId.value)
   if (!plan) return
 
-  form.name = (plan as any).name ?? ''
-  form.target_calories = (plan as any).target_calories
-  form.target_protein = (plan as any).target_protein
-  form.target_carbs = (plan as any).target_carbs
-  form.target_fat = (plan as any).target_fat
-  form.water_ml = (plan as any).water_ml
-  form.meals_per_day = (plan as any).meals_per_day
-  form.notes = (plan as any).notes ?? ''
+  const raw = plan as unknown as Record<string, unknown>
+  form.name = (raw.name as string) ?? ''
+  form.target_calories = raw.target_calories as number | undefined
+  form.target_protein = raw.target_protein as number | undefined
+  form.target_carbs = raw.target_carbs as number | undefined
+  form.target_fat = raw.target_fat as number | undefined
+  form.water_ml = raw.water_ml as number | undefined
+  form.meals_per_day = raw.meals_per_day as number | undefined
+  form.notes = (raw.notes as string) ?? ''
 
-  if (Array.isArray((plan as any).days)) {
+  if (Array.isArray(raw.days)) {
     form.days = weekDays.map(wd => {
-      const existing = (plan as any).days.find((d: any) => d.day === wd.key)
+      const existing = (raw.days as Array<{ day: string; meals: MealForm[] }>).find(d => d.day === wd.key)
       return { day: wd.key, meals: existing?.meals ?? [] }
     })
   }
@@ -271,8 +273,8 @@ async function save() {
       await api.post('/nutrition-plans', payload)
     }
     router.back()
-  } catch (e: any) {
-    error.value = e?.message ?? 'Error al guardar'
+  } catch (e: unknown) {
+    error.value = (e instanceof Error ? e.message : null) ?? 'Error al guardar'
   } finally {
     saving.value = false
   }

@@ -8,7 +8,11 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const { user, logout } = useAuthStore();
+import { storeToRefs } from 'pinia';
+
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
+const { logout } = authStore;
 const evidencesStore = useEvidencesStore();
 
 const isMobileMenuOpen = ref(false);
@@ -41,7 +45,7 @@ const navigation = computed(() => [
   },
   {
     name: t('nav.client.log'),
-    path: '/client/metricts',
+    path: '/client/metrics',
     icon: 'body',
   },
   {
@@ -56,7 +60,7 @@ const isActive = (path: string) => {
   return route.path.startsWith(path);
 };
 
-const ownClientId = computed(() => (user.value as any)?.client_id || (user.value as any)?.uid || '')
+const ownClientId = computed(() => user.value?.client_id ?? user.value?.uid ?? '')
 const unviewedEvidenceCount = computed(
   () => evidencesStore.getPendingForClient(ownClientId.value).unviewed_responded || 0,
 )
@@ -66,9 +70,9 @@ onMounted(async () => {
   await evidencesStore.loadPendingCount(ownClientId.value)
 })
 
-const handleLogout = () => {
-  logout();
-  router.push('/auth/login');
+const handleLogout = async () => {
+  await logout();
+  await router.replace('/auth/login');
 };
 </script>
 

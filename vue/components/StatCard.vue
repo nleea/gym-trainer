@@ -14,13 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 
 interface Props {
   title: string
   value: string | number
   subtitle?: string
-  icon?: any
+  icon?: Component
   variant?: 'primary' | 'accent' | 'success' | 'warning' | 'default'
 }
 

@@ -8,11 +8,12 @@ import {
   upsertTrainingLog as upsertTrainingLogRepo,
   listTrainingLogsByTrainerWeek,
   type PRItem,
-} from "../repo/trainingLogsrepo"
+} from "../repo/trainingLogsRepo"
 
 import {
   listMealLogsToday,
   createMealLog,
+  listMealLogsByClient,
   listMealLogsByClientRange,
   deleteMealLog,
   listMealLogsByTrainerWeek
@@ -26,11 +27,11 @@ import {
 import { getWeekRange, parseYmdLocal, toYmdLocal } from "../../lib/utils"
 
 /** ---------- helpers ---------- */
-function toJsDate(d: any): Date {
+function toJsDate(d: Date | string | { toDate: () => Date } | null | undefined): Date {
   if (!d) return new Date(0)
   if (d instanceof Date) return d
-  if (typeof d?.toDate === "function") return d.toDate()
-  return new Date(d)
+  if (typeof (d as { toDate?: () => Date })?.toDate === "function") return (d as { toDate: () => Date }).toDate()
+  return new Date(d as string)
 }
 function ymd(d: Date) {
   return toYmdLocal(d)
@@ -62,7 +63,9 @@ export const useLogsStore = defineStore("logs", {
     trainingLog: [] as DailyDiary[],
 
     allLogsByClient: {} as Record<string, TrainingLog[] | null | undefined>,
+    allMealLogsByClient: {} as Record<string, MealLog[] | null | undefined>,
     loadingAllByClient: {} as Record<string, boolean | undefined>,
+    loadingAllMealsByClient: {} as Record<string, boolean | undefined>,
 
     progressEntriesByClient: {} as Record<string, ProgressEntry[] | null | undefined>,
 
@@ -95,6 +98,9 @@ export const useLogsStore = defineStore("logs", {
 
     getAllClientLogs: (s) => (clientId: string) =>
       s.allLogsByClient[clientId] ?? null,
+
+    getAllClientMealLogs: (s) => (clientId: string) =>
+      s.allMealLogsByClient[clientId] ?? null,
   },
 
   actions: {
@@ -139,14 +145,40 @@ export const useLogsStore = defineStore("logs", {
       this.mealLogs = await listMealLogsToday(clientId)
     },
 
+    async loadAllClientMealLogs(clientId: string, force = false) {
+      if (!clientId) return null
+
+      if (!force && this.allMealLogsByClient[clientId] !== undefined) {
+        return this.allMealLogsByClient[clientId] ?? null
+      }
+
+      this.loadingAllMealsByClient[clientId] = true
+      try {
+        const logs = await listMealLogsByClient(clientId)
+        this.allMealLogsByClient[clientId] = logs ?? null
+        return logs ?? null
+      } finally {
+        this.loadingAllMealsByClient[clientId] = false
+      }
+    },
+
+    invalidateAllClientMealLogs(clientId: string) {
+      this.allMealLogsByClient[clientId] = undefined
+    },
+
     async registerMeal(clientId: string, meal: Omit<MealLog, "id">) {
-      const d = toJsDate((meal as any).date)
+      const d = toJsDate(meal.date)
       await createMealLog(meal);
       this.mealLogs.push(meal)
       const k = weekKey(clientId, d)
       const arr = this.mealsLogsByWeekKey[k]
-      if (Array.isArray(arr)) arr.push(meal as any)
-      else this.mealsLogsByWeekKey[k] = [meal as any]
+      if (Array.isArray(arr)) arr.push(meal as MealLog)
+      else this.mealsLogsByWeekKey[k] = [meal as MealLog]
+
+      const allLogs = this.allMealLogsByClient[clientId]
+      if (Array.isArray(allLogs)) {
+        allLogs.push(meal as MealLog)
+      }
 
       return meal
     },
@@ -164,11 +196,16 @@ export const useLogsStore = defineStore("logs", {
       const k = weekKey(clientId, anchorDate)
       const arr = this.mealsLogsByWeekKey[k]
       if (Array.isArray(arr)) {
-        this.mealsLogsByWeekKey[k] = arr.filter((m: any) => m.mealKey !== mealKey) as any
+        this.mealsLogsByWeekKey[k] = arr.filter((m: MealLog) => m.mealKey !== mealKey)
       }
 
       // también del listado "today" si está ahí
-      this.mealLogs = this.mealLogs.filter((m: any) => m.mealKey !== mealKey)
+      this.mealLogs = this.mealLogs.filter((m: MealLog) => m.mealKey !== mealKey)
+
+      const allLogs = this.allMealLogsByClient[clientId]
+      if (Array.isArray(allLogs)) {
+        this.allMealLogsByClient[clientId] = allLogs.filter((m: MealLog) => m.mealKey !== mealKey)
+      }
     },
 
     /** ---------------- All logs for a client (historial completo) ---------------- */
@@ -300,7 +337,7 @@ export const useLogsStore = defineStore("logs", {
     ): Promise<{ log: TrainingLog; prs: PRItem[] }> {
       const cid = log.clientId;
 
-      const dRaw = (log as any).date;
+      const dRaw = log.date;
       const d =
         typeof dRaw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dRaw)
           ? parseYmdLocal(dRaw)
@@ -313,46 +350,46 @@ export const useLogsStore = defineStore("logs", {
       const { id: realId, prs } = await upsertTrainingLogRepo(deterministicId, log);
 
       const merged: TrainingLog = {
-        ...(log as any),
+        ...log,
         id: realId,
         date: d,
       };
 
-      const current = Array.isArray(this.trainingLogsByWeekKey[wk])
-        ? this.trainingLogsByWeekKey[wk]
+      const current: TrainingLog[] = Array.isArray(this.trainingLogsByWeekKey[wk])
+        ? this.trainingLogsByWeekKey[wk]!
         : [];
 
       // Busca por fecha (no por ID determinístico) para no duplicar
       const dStr = ymd(d)
-      const idx = current.findIndex((x: any) => ymd(toJsDate(x.date)) === dStr);
+      const idx = current.findIndex((x: TrainingLog) => ymd(toJsDate(x.date)) === dStr);
 
-      let next: any[];
+      let next: TrainingLog[];
       if (idx >= 0) {
-        next = current.map((x: any, i: number) => (i === idx ? merged : x));
+        next = current.map((x: TrainingLog, i: number) => (i === idx ? merged : x));
       } else {
         next = [merged, ...current];
       }
 
       next.sort(
-        (a: any, b: any) => toJsDate(b.date).getTime() - toJsDate(a.date).getTime()
+        (a: TrainingLog, b: TrainingLog) => toJsDate(b.date).getTime() - toJsDate(a.date).getTime()
       );
 
       this.trainingLogsByWeekKey[wk] = next;
 
       // Mantener sincronizado el cache global usado por TrainingView/calendar.
-      const allCurrent = Array.isArray(this.allLogsByClient[cid])
-        ? this.allLogsByClient[cid]
+      const allCurrent: TrainingLog[] = Array.isArray(this.allLogsByClient[cid])
+        ? this.allLogsByClient[cid]!
         : [];
       const allIdx = allCurrent.findIndex(
-        (x: any) => ymd(toJsDate(x.date)) === dStr,
+        (x: TrainingLog) => ymd(toJsDate(x.date)) === dStr,
       );
-      const allNext =
+      const allNext: TrainingLog[] =
         allIdx >= 0
-          ? allCurrent.map((x: any, i: number) => (i === allIdx ? merged : x))
+          ? allCurrent.map((x: TrainingLog, i: number) => (i === allIdx ? merged : x))
           : [merged, ...allCurrent];
 
       allNext.sort(
-        (a: any, b: any) =>
+        (a: TrainingLog, b: TrainingLog) =>
           toJsDate(b.date).getTime() - toJsDate(a.date).getTime(),
       );
       this.allLogsByClient[cid] = allNext;
@@ -366,7 +403,7 @@ export const useLogsStore = defineStore("logs", {
      * pero internamente hace UPSERT (mejor).
      */
     async addTrainingLog(log: Omit<TrainingLog, "id">) {
-      return await this.upsertTrainingLog(log as any)
+      return await this.upsertTrainingLog(log)
     },
 
     /** ---------------- Progress ---------------- */
@@ -396,7 +433,9 @@ export const useLogsStore = defineStore("logs", {
 
     cleanStore() {
       this.allLogsByClient = {}
+      this.allMealLogsByClient = {}
       this.loadingAllByClient = {}
+      this.loadingAllMealsByClient = {}
       this.trainingLogsByWeekKey = {}
       this.mealsLogsByWeekKey = {}
       this.trainingLogsByWeekKeyTrainer = {}

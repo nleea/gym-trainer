@@ -31,7 +31,6 @@ const isSaving = ref(false);
 const showSuccess = ref(false);
 
 const exercises = ref<Exercise[]>([]);
-const showAddExercise = ref(false);
 
 const hydrated = ref(false);
 const templatesLoading = ref(false);
@@ -44,9 +43,9 @@ function hydrateFromUser() {
   const u = user.value;
   if (!u) return;
 
-  name.value = (u as any).name ?? '';
-  email.value = (u as any).email ?? '';
-  phone.value = (u as any).phone ?? '';
+  name.value = u.name ?? '';
+  email.value = u.email ?? '';
+  phone.value = u.phone ?? '';
 
   hydrated.value = true;
 }
@@ -66,8 +65,8 @@ const handleSaveProfile = async () => {
   showSuccess.value = false;
 
   try {
-    if (typeof (authStore as any).updateProfile === 'function') {
-      await (authStore as any).updateProfile({
+    if (typeof (authStore as unknown as Record<string, unknown>).updateProfile === 'function') {
+      await ((authStore as unknown as Record<string, unknown>).updateProfile as (data: Record<string, unknown>) => Promise<void>)({
         name: name.value.trim(),
         email: email.value.trim(),
         phone: phone.value.trim(),
@@ -90,10 +89,10 @@ const handleSaveProfile = async () => {
 };
 
 const visibleTrainingTemplates = computed(() =>
-  trainingTemplates.value.filter((p: any) => p.isTemplate !== false),
+  trainingTemplates.value.filter((p: TrainingPlan) => p.isTemplate !== false),
 );
 const visibleNutritionTemplates = computed(() =>
-  nutritionTemplates.value.filter((p: any) => p.isTemplate !== false),
+  nutritionTemplates.value.filter((p: NutritionPlan) => p.isTemplate !== false),
 );
 
 async function loadTemplates() {
@@ -310,7 +309,7 @@ onMounted(async () => {
             <div class="min-w-0">
               <p class="font-medium text-foreground truncate">{{ tpl.name }}</p>
               <p class="text-xs text-muted-foreground mt-1">
-                Asignada a {{ (tpl as any).copiesCount ?? 0 }} clientes
+                Asignada a {{ tpl.copiesCount ?? 0 }} clientes
               </p>
             </div>
             <div class="flex items-center gap-2">
@@ -345,7 +344,7 @@ onMounted(async () => {
             <div class="min-w-0">
               <p class="font-medium text-foreground truncate">{{ tpl.name }}</p>
               <p class="text-xs text-muted-foreground mt-1">
-                Asignada a {{ (tpl as any).copiesCount ?? 0 }} clientes
+                Asignada a {{ tpl.copiesCount ?? 0 }} clientes
               </p>
             </div>
             <div class="flex items-center gap-2">

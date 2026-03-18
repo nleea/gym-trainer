@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useConfigStore } from '../stores/config.store'
+import { getToken } from '../api'
 
 // Layouts
 import AuthLayout from '../layouts/AuthLayout.vue'
@@ -32,7 +33,7 @@ import LogWorkoutView from '../views/client/LogWorkoutView.vue'
 import ProgressView from '../views/client/ProgressView.vue'
 import ClientSettingsView from '../views/client/SettingsView.vue'
 import AppearanceSettings from '../views/settings/AppearanceSettings.vue'
-import MetrictsView from '../views/client/metrictsView.vue'
+import MetricsView from '../views/client/MetricsView.vue'
 import WeeklyCheckinView from '../views/client/WeeklyCheckinView.vue'
 import ExerciseLibraryView from '../views/shared/ExerciseLibraryView.vue'
 
@@ -46,6 +47,14 @@ function getUserFromStorage(): null | { role: Role } {
   } catch {
     return null
   }
+}
+
+function getSessionFromStorage(): null | { role: Role } {
+  const token = getToken()
+  const user = getUserFromStorage()
+
+  if (!token || !user) return null
+  return user
 }
 
 const routes: RouteRecordRaw[] = [
@@ -97,7 +106,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'nutrition', name: 'nutrition', component: NutritionView, meta: { viewTheme: 'nutrition' } },
       { path: 'daily-log', name: 'log-workout', component: LogWorkoutView, meta: { viewTheme: 'training' } },
       { path: 'progress', name: 'progress', component: ProgressView, meta: { viewTheme: 'progress' } },
-      { path: 'metricts', name: 'metricts', component: MetrictsView, meta: { viewTheme: 'metrics' } },
+      { path: 'metrics', name: 'metrics', component: MetricsView, meta: { viewTheme: 'metrics' } },
       { path: 'settings', name: 'client-settings', component: ClientSettingsView, meta: { viewTheme: 'settings' } },
       { path: 'settings/appearance', name: 'client-appearance', component: AppearanceSettings, meta: { viewTheme: 'settings' } },
       { path: 'weekly-checkin', name: 'weekly-checkin', component: WeeklyCheckinView },
@@ -122,7 +131,7 @@ let configLoaded = false
 
 // Guard (Vue Router 4)
 router.beforeEach(async (to) => {
-  const user = getUserFromStorage()
+  const user = getSessionFromStorage()
 
   const requiresAuth = Boolean(to.meta.requiresAuth)
   const requiredRole = to.meta.role as Role | undefined

@@ -62,8 +62,8 @@ async function generateReport() {
     await monthlyReportRepo.downloadReport(props.clientId, selectedMonthStr.value, props.clientName)
     showToast('Report generated and downloaded', 'success')
     await loadSavedReports()
-  } catch (e: any) {
-    showToast(e?.message ?? 'Failed to generate report', 'error')
+  } catch (e: unknown) {
+    showToast(e instanceof Error ? e.message : 'Failed to generate report', 'error')
   } finally {
     generating.value = false
   }
@@ -98,8 +98,8 @@ async function downloadSaved(report: SavedReport) {
   generating.value = true
   try {
     await monthlyReportRepo.downloadReport(props.clientId, report.month, props.clientName)
-  } catch (e: any) {
-    showToast(e?.message ?? 'Download failed', 'error')
+  } catch (e: unknown) {
+    showToast(e instanceof Error ? e.message : 'Download failed', 'error')
   } finally {
     generating.value = false
   }

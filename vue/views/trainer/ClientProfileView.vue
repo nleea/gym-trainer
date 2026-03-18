@@ -3,13 +3,14 @@ import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { useDataStore } from '../../stores/data';
 import { useAuthStore } from '../../stores/auth';
 import { useLogsStore } from '../../stores/logs.store';
 import { useClientsStore } from '../../stores/clients.store';
+import { useAttendanceStore } from '../../stores/attendance.store';
 import { useEvidencesStore } from '../../stores/evidences.store';
 
 import { formatDate, toJsDate, weekKey } from '../../../lib/utils';
+import type { TrainingLog, ExerciseLog, MealLog } from '../../types';
 
 import ProgressTab from '../../components/ProgressTab.vue';
 import AssignTrainingPlanModal from '../../components/AssignTrainingPlanModal.vue';
@@ -21,11 +22,11 @@ import ReportsTab from '../../components/ReportsTab.vue'
 const logsStore = useLogsStore();
 const authStore = useAuthStore();
 const clientStore = useClientsStore();
+const attendanceStore = useAttendanceStore();
 const evidencesStore = useEvidencesStore();
 
 const route = useRoute();
 const router = useRouter();
-const dataStore = useDataStore();
 
 const trainerId = computed(() => authStore.user?.uid ?? '');
 const clientId = computed(() => route.params.id as string);
@@ -33,7 +34,7 @@ const clientId = computed(() => route.params.id as string);
 const { getClientTrainingLogsCached, mealsLogsByWeekKey } =
   storeToRefs(logsStore);
 
-const { trainingPlan, nutritionplan } = storeToRefs(clientStore);
+const { trainingPlan, nutritionPlan } = storeToRefs(clientStore);
 
 const todayWorkoutLogs = computed(() => {
   const cid = clientId.value;
@@ -43,7 +44,7 @@ const todayWorkoutLogs = computed(() => {
   return logsWeek
     .slice()
     .sort(
-      (a: any, b: any) =>
+      (a: TrainingLog, b: TrainingLog) =>
         toJsDate(b.date)!.getTime() - toJsDate(a.date)!.getTime(),
     );
 });
@@ -54,24 +55,24 @@ const loadingClient = ref(true);
 
 // -------- helpers UI --------
 
-function calcExerciseVolume(ex: any) {
+function calcExerciseVolume(ex: ExerciseLog) {
   return (ex?.sets || []).reduce(
-    (s: number, set: any) =>
+    (s: number, set: { reps: number; weight: number }) =>
       s + Number(set?.reps || 0) * Number(set?.weight || 0),
     0,
   );
 }
 
-function calcExerciseMax(ex: any) {
+function calcExerciseMax(ex: ExerciseLog) {
   return Math.max(
     0,
-    ...(ex?.sets || []).map((s: any) => Number(s?.weight || 0)),
+    ...(ex?.sets || []).map((s: { weight: number }) => Number(s?.weight || 0)),
   );
 }
 
-function calcWorkoutVolume(log: any) {
+function calcWorkoutVolume(log: TrainingLog) {
   return (log?.exercises || []).reduce(
-    (sum: number, ex: any) => sum + calcExerciseVolume(ex),
+    (sum: number, ex: ExerciseLog) => sum + calcExerciseVolume(ex),
     0,
   );
 }
@@ -79,15 +80,15 @@ function calcWorkoutVolume(log: any) {
 const client = computed(
   () =>
     clientStore.getClientCached(clientId.value) ??
-    dataStore.getClient(clientId.value) ??
+    clientStore.getClientLocal(clientId.value) ??
     null,
 );
 const attendance = computed(() =>
-  dataStore.getClientAttendance(clientId.value).slice(0, 14),
+  attendanceStore.getClientAttendance(clientId.value).slice(0, 14),
 );
 
 const attendanceRate = computed(() =>
-  dataStore.getWeeklyAttendanceRate(clientId.value),
+  attendanceStore.getWeeklyAttendanceRate(clientId.value),
 );
 
 const mealLogs = computed(() => {
@@ -97,9 +98,9 @@ const mealLogs = computed(() => {
   if (!cid) return [];
   const list = mealsLogsByWeekKey.value[key] ?? [];
 
-  return (list ?? []).slice().sort((a: any, b: any) => {
-    const da = new Date(a.date as any).getTime();
-    const db = new Date(b.date as any).getTime();
+  return (list ?? []).slice().sort((a: MealLog, b: MealLog) => {
+    const da = new Date(a.date as string | number | Date).getTime();
+    const db = new Date(b.date as string | number | Date).getTime();
     return db - da;
   });
 });
@@ -121,7 +122,7 @@ watch(
       const fetches = [
         logsStore.loadTrainingLogWeek(id),
         logsStore.loadMealsLogWeek(id),
-        dataStore.loadAttendance(),
+        attendanceStore.loadAttendance(),
         clientStore.fetchPlanTrining(id),
         clientStore.fetchNutritionPlan(id),
         evidencesStore.loadPendingCount(id),
@@ -173,7 +174,7 @@ const photoTypeTabs = [
 
 const toggleStatus = () => {
   if (client.value) {
-    dataStore.updateClient(clientId.value, {
+    clientStore.updateClient(clientId.value, {
       status: client.value.status === 'active' ? 'inactive' : 'active',
     });
   }
@@ -187,7 +188,7 @@ const toggleStatus = () => {
 
   <div
     v-else-if="client"
-    class="mx-auto w-full max-w-6xl space-y-6 px-1 sm:px-2"
+    class="w-full space-y-6 px-1 sm:px-2"
   >
     <!-- Hero -->
     <div
@@ -453,7 +454,7 @@ const toggleStatus = () => {
 
                 <div class="flex items-center gap-2">
                   <span
-                    v-if="nutritionplan"
+                    v-if="nutritionPlan"
                     class="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs text-foreground"
                   >
                     Asignado
@@ -466,7 +467,7 @@ const toggleStatus = () => {
                   </span>
 
                   <p class="text-sm text-muted-foreground">
-                    <span v-if="nutritionplan">{{ nutritionplan.name }}</span>
+                    <span v-if="nutritionPlan">{{ nutritionPlan.name }}</span>
                     <span v-else
                       >Asigna un plan para empezar el seguimiento</span
                     >
@@ -501,8 +502,8 @@ const toggleStatus = () => {
               <!-- Ver / Editar -->
               <RouterLink
                 :to="
-                  nutritionplan
-                    ? `/trainer/plans/nutrition/${client.id}/${nutritionplan.id}`
+                  nutritionPlan
+                    ? `/trainer/plans/nutrition/${client.id}/${nutritionPlan.id}`
                     : `/trainer/plans/nutrition/new`
                 "
                 class="group flex items-start gap-3 rounded-xl border border-border bg-background p-4 transition hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring"
@@ -535,11 +536,11 @@ const toggleStatus = () => {
 
                 <div class="min-w-0">
                   <p class="font-medium text-foreground">
-                    {{ nutritionplan ? 'Ver / Editar plan' : 'Crear plan' }}
+                    {{ nutritionPlan ? 'Ver / Editar plan' : 'Crear plan' }}
                   </p>
                   <p class="text-sm text-muted-foreground">
                     {{
-                      nutritionplan
+                      nutritionPlan
                         ? 'Ajusta ejercicios y semanas para este cliente'
                         : 'Crea una plantilla o plan inicial'
                     }}
@@ -575,7 +576,7 @@ const toggleStatus = () => {
 
                 <div class="min-w-0">
                   <p class="font-medium text-foreground">
-                    {{ nutritionplan ? 'Cambiar / reasignar' : 'Asignar plan' }}
+                    {{ nutritionPlan ? 'Cambiar / reasignar' : 'Asignar plan' }}
                   </p>
                   <p class="text-sm text-muted-foreground">
                     Selecciona una plantilla y crea el plan del cliente
@@ -781,7 +782,7 @@ const toggleStatus = () => {
             <p class="text-sm font-semibold text-foreground">
               {{
                 mealLogs.filter((m) => {
-                  const a = new Date(m.date as any);
+                  const a = new Date(m.date as string | number | Date);
                   const b = new Date();
                   return (
                     a.getFullYear() === b.getFullYear() &&

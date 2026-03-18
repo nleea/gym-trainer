@@ -2,6 +2,8 @@
 import { defineStore } from "pinia"
 import type { TrainingPlan, NutritionPlan } from "../types"
 
+import type { AssignedTrainingPlan, AssignedNutritionPlan } from "../types"
+
 import {
   listTrainingPlans,
   updateTrainingPlan,
@@ -17,9 +19,8 @@ import {
   createNutritionPlan,
   assignNutritionTemplateToClient as assignNutritionTemplateToClientRepo
 } from "../repo/nutritionPlan"
-import { getClientNutritionPlan as getClientNutritionPlanFromClientRepo } from "../repo/clients"
+import { getClientNutritionPlan as getClientNutritionPlanFromClientRepo, updateClient } from "../repo/clients"
 
-import { useClientsStore } from "./clients.store"
 
 export const usePlansStore = defineStore("plans", {
   state: () => ({
@@ -106,8 +107,8 @@ export const usePlansStore = defineStore("plans", {
           const plan = await getNutritionPlanById(nutritionPlan)
           this.nutritionPlanByClient[clientId] = plan ?? null
           return plan ?? null
-        } catch (e: any) {
-          this.errorNutritionPlanByClient[clientId] = e?.message ?? "Error loading nutrition plan"
+        } catch (e: unknown) {
+          this.errorNutritionPlanByClient[clientId] = e instanceof Error ? e.message : "Error loading nutrition plan"
           this.nutritionPlanByClient[clientId] = null
           throw e
         } finally {
@@ -151,15 +152,23 @@ export const usePlansStore = defineStore("plans", {
     },
 
     async addTrainingPlan(plan: Omit<TrainingPlan, "id" | "createdAt" | "updatedAt">) {
-      const newPlan: TrainingPlan = { ...plan, createdAt: new Date(), updatedAt: new Date() }
-      await createTrainingPlan("", newPlan)
+      const newPlan: TrainingPlan = { ...plan, createdAt: new Date(), updatedAt: new Date(), isTemplate: true }
+      const id = await createTrainingPlan("", newPlan)
+      newPlan.id = id
       this.trainingPlans.push(newPlan)
       return newPlan
     },
 
-    async addNutritionPlan(plan: Omit<NutritionPlan, "id" | "createdAt" | "updatedAt">) {
-      const newPlan: NutritionPlan = { ...plan, createdAt: new Date(), updatedAt: new Date() }
-      await createNutritionPlan("", newPlan)
+    async addNutritionPlan(plan: Partial<NutritionPlan>) {
+      const newPlan: NutritionPlan = {
+        ...plan,
+        days: plan.days || [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isTemplate: true,
+      }
+      const id = await createNutritionPlan("", newPlan)
+      newPlan.id = id
       this.nutritionPlans.push(newPlan)
       return newPlan
     },
@@ -170,6 +179,32 @@ export const usePlansStore = defineStore("plans", {
 
     async assignNutritionTemplateToClient(template: string, clientId: string, startDate: string, durationWeeks: number, uid: string) {
       return await assignNutritionTemplateToClientRepo(template, clientId, startDate, durationWeeks, uid)
+    },
+
+    async assignTrainingPlan(planId: string, clientId: string, startDate: Date, endDate: Date) {
+      const assignment: AssignedTrainingPlan = {
+        id: crypto.randomUUID(),
+        planId,
+        clientId,
+        startDate,
+        endDate,
+        status: "active",
+      }
+      await updateClient(clientId, { plan_id: planId })
+      return assignment
+    },
+
+    async assignNutritionPlan(planId: string, clientId: string, startDate: Date, endDate: Date) {
+      const assignment: AssignedNutritionPlan = {
+        id: crypto.randomUUID(),
+        planId,
+        clientId,
+        startDate,
+        endDate,
+        status: "active",
+      }
+      await updateClient(clientId, { nutrition_plan_id: planId })
+      return assignment
     },
 
     cleanStore() {

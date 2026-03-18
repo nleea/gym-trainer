@@ -8,7 +8,12 @@ function toISO(d: Date): string {
   return toYmdLocal(d)
 }
 
-function mapEntry(d: any): ProgressEntry {
+interface RawProgressEntry extends Record<string, unknown> {
+  date?: unknown
+  createdAt?: unknown
+}
+
+function mapEntry(d: RawProgressEntry): ProgressEntry {
   return {
     ...d,
     date: toDate(d.date) ?? new Date(),
@@ -31,7 +36,7 @@ export async function addProgressEntry(
 }
 
 export async function listProgressByClient(clientId: string): Promise<ProgressEntry[]> {
-  const list = await api.get<any[]>(`/progress/${clientId}`)
+  const list = await api.get<RawProgressEntry[]>(`/progress/${clientId}`)
   return list.map(mapEntry)
 }
 
@@ -39,6 +44,6 @@ export async function listProgressByClientAndType(
   clientId: string,
   type: ProgressEntry['type']
 ): Promise<ProgressEntry[]> {
-  const list = await api.get<any[]>(`/progress/${clientId}?type=${type}`)
+  const list = await api.get<RawProgressEntry[]>(`/progress/${clientId}?type=${type}`)
   return list.map(mapEntry)
 }

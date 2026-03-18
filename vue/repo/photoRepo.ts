@@ -3,7 +3,28 @@ import type { Photo, PhotoTimeline, PhotoType } from '../types/photo.types'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
-function fromResponse(raw: any): Photo {
+interface RawPhoto {
+  id: string
+  client_id: string
+  uploaded_by: string
+  type: PhotoType
+  url: string
+  notes?: string
+  taken_at: string
+  created_at: string
+}
+
+interface RawPhotoGroup {
+  date: string
+  photos?: RawPhoto[]
+}
+
+interface RawPhotoTimeline {
+  type: PhotoType
+  groups?: RawPhotoGroup[]
+}
+
+function fromResponse(raw: RawPhoto): Photo {
   return {
     id:         raw.id,
     clientId:   raw.client_id,
@@ -16,10 +37,10 @@ function fromResponse(raw: any): Photo {
   }
 }
 
-function fromTimeline(raw: any): PhotoTimeline {
+function fromTimeline(raw: RawPhotoTimeline): PhotoTimeline {
   return {
     type:   raw.type,
-    groups: (raw.groups ?? []).map((g: any) => ({
+    groups: (raw.groups ?? []).map((g: RawPhotoGroup) => ({
       date:   g.date,
       photos: (g.photos ?? []).map(fromResponse),
     })),
@@ -28,7 +49,7 @@ function fromTimeline(raw: any): PhotoTimeline {
 
 export const photoRepo = {
   async getTimeline(clientId: string, type: PhotoType): Promise<PhotoTimeline> {
-    const raw = await api.get<any>(`/photos/${clientId}/timeline/${type}`)
+    const raw = await api.get<RawPhotoTimeline>(`/photos/${clientId}/timeline/${type}`)
     return fromTimeline(raw)
   },
 
@@ -54,7 +75,7 @@ export const photoRepo = {
     if (!uploadRes.ok) throw new Error('No se pudo subir la imagen a R2')
 
     // Step 3: save the photo record in our DB
-    const raw = await api.post<any>(`/photos/${clientId}/record`, {
+    const raw = await api.post<RawPhoto>(`/photos/${clientId}/record`, {
       r2_key:   signed.r2_key,
       type,
       taken_at: takenAt,
@@ -70,8 +91,8 @@ export const photoRepo = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
     if (!res.ok && res.status !== 204) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err?.detail ?? `Error ${res.status}`)
+      const err = await res.json().catch(() => ({})) as Record<string, unknown>
+      throw new Error((err?.detail as string) ?? `Error ${res.status}`)
     }
   },
 }

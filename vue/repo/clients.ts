@@ -3,7 +3,28 @@ import { api } from '../api'
 import type { Client, NutritionPlan, TrainingPlan } from '../types'
 import { toDate } from './fireRepo'
 
-function mapClient(d: any): Client {
+interface RawClient extends Record<string, unknown> {
+  createdAt?: unknown
+  created_at?: unknown
+  startDate?: unknown
+  start_date?: unknown
+}
+
+interface RawTrainingPlan extends Record<string, unknown> {
+  createdAt?: unknown
+  created_at?: unknown
+  updatedAt?: unknown
+  updated_at?: unknown
+}
+
+interface RawNutritionPlan extends Record<string, unknown> {
+  createdAt?: unknown
+  created_at?: unknown
+  updatedAt?: unknown
+  updated_at?: unknown
+}
+
+function mapClient(d: RawClient): Client {
   return {
     ...d,
     createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
@@ -11,7 +32,7 @@ function mapClient(d: any): Client {
   } as Client
 }
 
-function mapTrainingPlan(d: any): TrainingPlan {
+function mapTrainingPlan(d: RawTrainingPlan): TrainingPlan {
   return {
     ...d,
     createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
@@ -19,7 +40,7 @@ function mapTrainingPlan(d: any): TrainingPlan {
   } as TrainingPlan
 }
 
-function mapNutritionPlan(d: any): NutritionPlan {
+function mapNutritionPlan(d: RawNutritionPlan): NutritionPlan {
   return {
     ...d,
     createdAt: toDate(d.createdAt ?? d.created_at) ?? new Date(),
@@ -35,7 +56,7 @@ export async function createClient(data: Partial<Client>): Promise<string> {
 
 // LIST (filtrado por trainer vía token)
 export async function listClientsByTrainer(_trainerId?: string): Promise<Client[]> {
-  const list = await api.get<any[]>('/clients')
+  const list = await api.get<RawClient[]>('/clients')
   return list.map(mapClient)
 }
 
@@ -44,7 +65,7 @@ export const listClients = listClientsByTrainer
 // GET BY ID
 export async function getClientById(clientId: string): Promise<Client | null> {
   try {
-    const d = await api.get<any>(`/clients/${clientId}`)
+    const d = await api.get<RawClient>(`/clients/${clientId}`)
     return mapClient(d)
   } catch {
     return null
@@ -64,7 +85,7 @@ export async function deleteClient(clientId: string): Promise<void> {
 // Plan de entrenamiento activo del cliente
 export async function getClientPlantraining(clientId: string): Promise<TrainingPlan | null> {
   try {
-    const plan = await api.get<any>(`/training-plans/client/${clientId}`)
+    const plan = await api.get<RawTrainingPlan>(`/training-plans/client/${clientId}`)
     return mapTrainingPlan(plan)
   } catch {
     return null
@@ -74,7 +95,7 @@ export async function getClientPlantraining(clientId: string): Promise<TrainingP
 // Plan de nutrición activo del cliente
 export async function getClientNutritionPlan(clientId: string): Promise<NutritionPlan | null> {
   try {
-    const plan = await api.get<any>(`/nutrition-plans/client/${clientId}`)
+    const plan = await api.get<RawNutritionPlan>(`/nutrition-plans/client/${clientId}`)
     return mapNutritionPlan(plan)
   } catch {
     return null
@@ -112,13 +133,27 @@ export interface ExerciseProgressItem {
   trend: number
 }
 
+export interface WorkoutHistorySet {
+  reps: number
+  weight: number
+  rpe?: number
+  completed?: boolean
+}
+
+export interface WorkoutHistoryExercise {
+  exerciseId: string
+  exerciseName: string
+  sets: WorkoutHistorySet[]
+  notes?: string
+}
+
 export interface WorkoutHistoryItem {
   id: string
   date: string
   duration?: number
   notes?: string
   effort?: number
-  exercises: any[]
+  exercises: WorkoutHistoryExercise[]
   volume: number
   maxWeight: number
 }

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { userConfigRepo } from '@/repo/userConfig.repo'
 import { DEFAULT_CONFIG } from '@/config/defaults'
-import type { AppearanceConfig, ThemeColors, ViewKey } from '@/types/config.types'
+import type { AppearanceConfig, Language, ThemeColors, ViewKey } from '@/types/config.types'
 import { i18n } from '@/plugins/i18n'
 
 const DENSITY_CLASSES = ['density-compact', 'density-normal', 'density-comfortable']
@@ -29,11 +29,11 @@ export const useConfigStore = defineStore('config', () => {
       const data = await userConfigRepo.get()
       config.value = cloneAppearanceConfig(data)
       reapplyTheme()
-      i18n.global.locale.value = config.value.language as any
+      i18n.global.locale.value = config.value.language as Language
     } catch {
       config.value = cloneAppearanceConfig(DEFAULT_CONFIG)
       reapplyTheme()
-      i18n.global.locale.value = config.value.language as any
+      i18n.global.locale.value = config.value.language as Language
     } finally {
       loading.value = false
     }
@@ -43,7 +43,7 @@ export const useConfigStore = defineStore('config', () => {
     await userConfigRepo.save(newConfig)
     config.value = cloneAppearanceConfig(newConfig)
     reapplyTheme()
-    i18n.global.locale.value = newConfig.language as any
+    i18n.global.locale.value = newConfig.language as Language
   }
 
   function setActiveView(viewKey: ViewKey | null) {

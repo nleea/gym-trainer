@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useDataStore } from '../../stores/data';
+import { useClientsStore } from '../../stores/clients.store';
+import { useAttendanceStore } from '../../stores/attendance.store';
 import { useAuthStore } from '../../stores/auth';
 
-const dataStore = useDataStore();
+const clientsStore = useClientsStore();
+const attendanceStore = useAttendanceStore();
 const authStore = useAuthStore();
 
 const { user } = storeToRefs(authStore);
-const { clients } = storeToRefs(dataStore);
+const { clients } = storeToRefs(clientsStore);
 
 const userId = computed(() => user.value?.uid ?? '');
 
@@ -41,11 +43,11 @@ async function loadTrainerData(uid: string) {
   error.value = '';
   try {
     await Promise.all([
-      dataStore.loadClients(uid as any),
-      dataStore.loadAttendance(),
+      clientsStore.loadClients(uid),
+      attendanceStore.loadAttendance(),
     ]);
-  } catch (e: any) {
-    error.value = e?.message ?? 'Error cargando datos';
+  } catch (e: unknown) {
+    error.value = (e instanceof Error ? e.message : null) ?? 'Error cargando datos';
   } finally {
     loading.value = false;
   }
@@ -67,12 +69,8 @@ watch(
 );
 
 /** ✅ hoy (getter devuelve función) */
-const todayAttendance = computed(() => dataStore.getTodayAttendance());
+const todayAttendance = computed(() => attendanceStore.getTodayAttendance());
 
-const getClientAttendanceToday = (clientId: string) => {
-  const attendance = todayAttendance.value.find((a) => a.clientId === clientId);
-  return attendance?.attended ?? false;
-};
 
 const activeClients = computed(() =>
   (clients.value ?? []).filter((c) => c.status === 'active'),
@@ -113,8 +111,8 @@ const filteredClients = computed(() => {
 /** ✅ acciones */
 const toggleAttendance = async (clientId: string, attended: boolean) => {
   try {
-    await dataStore.markAttendance(clientId, attended);
-  } catch (e: any) {
+    await attendanceStore.markAttendance(clientId, attended);
+  } catch (e: unknown) {
     console.error(e);
   }
 };
@@ -129,7 +127,7 @@ const handleAddClient = async () => {
 
   loading.value = true;
   try {
-    const created = await dataStore.addClient({
+    const created = await clientsStore.addClient({
       name: newClient.value.name.trim(),
       email: newClient.value.email.trim(),
       phone: newClient.value.phone?.trim() ?? '',
@@ -166,8 +164,8 @@ const handleAddClient = async () => {
 
     showAddModal.value = false;
     return created;
-  } catch (e: any) {
-    error.value = e?.message ?? 'No se pudo crear el cliente';
+  } catch (e: unknown) {
+    error.value = (e instanceof Error ? e.message : null) ?? 'No se pudo crear el cliente';
   } finally {
     loading.value = false;
   }

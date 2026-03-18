@@ -47,8 +47,8 @@ async function download(report: SavedReport) {
   try {
     await monthlyReportRepo.downloadReport(props.clientId, report.month, props.clientName, true)
     showToast('Report downloaded', 'success')
-  } catch (e: any) {
-    showToast(e?.message ?? 'Download failed', 'error')
+  } catch (e: unknown) {
+    showToast(e instanceof Error ? e.message : String(e), 'error')
   } finally {
     downloading.value = null
   }

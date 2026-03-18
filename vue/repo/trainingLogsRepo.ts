@@ -1,4 +1,4 @@
-// vue/repo/trainingLogsrepo.ts
+// vue/repo/trainingLogsRepo.ts
 import { api } from '../api'
 import type { TrainingLog, ExerciseLog } from '../types'
 import { toDate } from './fireRepo'
@@ -8,12 +8,72 @@ function toISO(d: Date): string {
   return toYmdLocal(d)
 }
 
+interface RawSet {
+  reps?: number
+  weight?: number
+  rpe?: number | null
+  completed?: boolean
+}
+
+interface RawExerciseLog {
+  exerciseId?: string
+  exercise_id?: string
+  exerciseName?: string
+  exercise_name?: string
+  sets?: RawSet[]
+  notes?: string
+}
+
+interface RawTrainingLog {
+  id?: string
+  client_id?: string
+  clientId?: string
+  trainer_id?: string
+  trainerId?: string
+  date?: unknown
+  exercises?: RawExerciseLog[]
+  duration?: number
+  notes?: string
+  effort?: number
+  name?: string
+}
+
+interface RawExerciseInput {
+  exerciseId?: string
+  planExerciseId?: string
+  exerciseName?: string
+  name?: string
+  sets?: RawSet[]
+  notes?: string
+}
+
+interface UpsertLogInput {
+  date: Date | string
+  exercises?: RawExerciseInput[]
+  duration?: number | null
+  notes?: string | null
+  effort?: number | null
+}
+
+interface UpsertResponse {
+  id?: string
+  log?: { id?: string }
+  prs?: PRItem[]
+}
+
+interface LastPerformanceItem {
+  exercise_id: string
+  reps: number
+  weight: number
+  date: string
+}
+
 // Mapea un ejercicio del backend (camelCase, tipado) al tipo frontend
-function mapExerciseLog(e: any): ExerciseLog {
+function mapExerciseLog(e: RawExerciseLog): ExerciseLog {
   return {
     exerciseId: e.exerciseId ?? e.exercise_id ?? '',
     exerciseName: e.exerciseName ?? e.exercise_name ?? '',
-    sets: (e.sets ?? []).map((s: any) => ({
+    sets: (e.sets ?? []).map((s: RawSet) => ({
       reps: Number(s.reps ?? 0),
       weight: Number(s.weight ?? 0),
       rpe: s.rpe != null ? Number(s.rpe) : undefined,
@@ -24,7 +84,7 @@ function mapExerciseLog(e: any): ExerciseLog {
 }
 
 // Mapea un training log del backend (snake_case) al tipo frontend (camelCase)
-function mapLog(d: any): TrainingLog {
+function mapLog(d: RawTrainingLog): TrainingLog {
   return {
     id: d.id,
     clientId: d.client_id ?? d.clientId ?? '',
@@ -39,11 +99,11 @@ function mapLog(d: any): TrainingLog {
 }
 
 // Serializa un ExerciseLog frontend al formato que espera el backend
-function serializeExercise(ex: any) {
+function serializeExercise(ex: RawExerciseInput) {
   return {
     exerciseId: ex.exerciseId ?? ex.planExerciseId ?? '',
     exerciseName: String(ex.exerciseName ?? ex.name ?? '').trim(),
-    sets: (ex.sets ?? []).map((s: any) => ({
+    sets: (ex.sets ?? []).map((s: RawSet) => ({
       reps: Number(s.reps ?? 0),
       weight: Number(s.weight ?? 0),
       rpe: s.rpe != null ? Number(s.rpe) : null,
@@ -56,7 +116,7 @@ function serializeExercise(ex: any) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 export async function listTrainingLogsByClient(clientId: string): Promise<TrainingLog[]> {
-  const list = await api.get<any[]>(`/training-logs?client_id=${clientId}`)
+  const list = await api.get<RawTrainingLog[]>(`/training-logs?client_id=${clientId}`)
   return list.map(mapLog)
 }
 
@@ -65,7 +125,7 @@ export async function listTrainingLogsByClientWeek(
   anchorDate = new Date()
 ): Promise<TrainingLog[]> {
   const { start } = getWeekRange(anchorDate)
-  const list = await api.get<any[]>(
+  const list = await api.get<RawTrainingLog[]>(
     `/training-logs/${clientId}/week/${toISO(start)}`
   )
   return list.map(mapLog)
@@ -77,10 +137,11 @@ export async function listTrainingLogsByTrainerWeek(
 ): Promise<TrainingLog[]> {
   const { start } = getWeekRange(anchorDate)
   try {
-    const list = await api.get<any[]>(`/training-logs?week_start=${toISO(start)}`)
+    const list = await api.get<RawTrainingLog[]>(`/training-logs?week_start=${toISO(start)}`)
     return list.map(mapLog)
-  } catch (err: any) {
-    console.error('listTrainingLogsByTrainerWeek error:', err?.message)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('listTrainingLogsByTrainerWeek error:', message)
     return []
   }
 }
@@ -89,7 +150,7 @@ export async function listTrainingLogsLastDays(clientId: string, days = 45): Pro
   const end = new Date()
   const start = new Date()
   start.setDate(end.getDate() - days)
-  const list = await api.get<any[]>(
+  const list = await api.get<RawTrainingLog[]>(
     `/training-logs?client_id=${clientId}&week_start=${toISO(start)}`
   )
   return list.map(mapLog)
@@ -104,9 +165,9 @@ export type PRItem = { exerciseName: string; newWeight: number; previousBest: nu
  */
 export async function upsertTrainingLog(
   _deterministicId: string,
-  log: any,
+  log: UpsertLogInput,
 ): Promise<{ id: string; prs: PRItem[] }> {
-  const res = await api.post<any>('/training-logs', {
+  const res = await api.post<UpsertResponse>('/training-logs', {
     date: toISO(log.date instanceof Date ? log.date : new Date(log.date)),
     exercises: (log.exercises ?? []).map(serializeExercise),
     duration: log.duration ?? null,
@@ -125,7 +186,7 @@ export async function getLastPerformance(
 ): Promise<Record<string, { reps: number; weight: number; date: string }>> {
   if (!exerciseIds.length) return {}
   const ids = exerciseIds.join(',')
-  const list = await api.get<any[]>(
+  const list = await api.get<LastPerformanceItem[]>(
     `/training-logs/clients/${clientId}/last-performance?exercise_ids=${encodeURIComponent(ids)}`,
   )
   return Object.fromEntries(
@@ -137,7 +198,7 @@ export async function getLastPerformance(
  * Actualiza un log existente por su UUID real.
  */
 export async function updateTrainingLog(id: string, data: Partial<TrainingLog>): Promise<TrainingLog> {
-  const res = await api.put<any>(`/training-logs/${id}`, {
+  const res = await api.put<RawTrainingLog>(`/training-logs/${id}`, {
     exercises: data.exercises ? data.exercises.map(serializeExercise) : undefined,
     duration: data.duration,
     notes: data.notes,
@@ -151,7 +212,7 @@ export async function updateTrainingLog(id: string, data: Partial<TrainingLog>):
  * @deprecated Preferir upsertTrainingLog que hace create-or-update.
  */
 export async function createTrainingLog(data: TrainingLog): Promise<string> {
-  const res = await api.post<any>('/training-logs', {
+  const res = await api.post<{ id: string }>('/training-logs', {
     date: toISO(data.date instanceof Date ? data.date : new Date(data.date)),
     exercises: (data.exercises ?? []).map(serializeExercise),
     duration: data.duration ?? null,

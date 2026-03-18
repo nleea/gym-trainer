@@ -1,12 +1,21 @@
 import { api } from '../api'
-import type { AppearanceConfig, ThemeColors } from '../types/config.types'
+import type { AppearanceConfig, Density, Language, ThemeColors } from '../types/config.types'
 
-function fromResponse(res: any): AppearanceConfig {
+interface UserConfigResponse {
+  config?: {
+    language?: string
+    density?: string
+    global_theme?: Record<string, string>
+    view_themes?: Record<string, Record<string, string>>
+  }
+}
+
+function fromResponse(res: UserConfigResponse): AppearanceConfig {
   const c = res.config ?? {}
   const gt = c.global_theme ?? {}
   return {
-    language:    c.language    ?? 'es',
-    density:     c.density     ?? 'normal',
+    language:    (c.language ?? 'es') as Language,
+    density:     (c.density ?? 'normal') as Density,
     globalTheme: {
       primary:     gt.primary      ?? '#6366f1',
       secondary:   gt.secondary    ?? '#10b981',
@@ -44,7 +53,7 @@ function toPayload(config: AppearanceConfig): Record<string, unknown> {
 
 export const userConfigRepo = {
   async get(): Promise<AppearanceConfig> {
-    const res = await api.get<unknown>('/config/')
+    const res = await api.get<UserConfigResponse>('/config/')
     return fromResponse(res)
   },
 

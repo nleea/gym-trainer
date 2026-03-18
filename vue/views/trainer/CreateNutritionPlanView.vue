@@ -1,40 +1,35 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { useDataStore } from '../../stores/data';
-import type { NutritionPlan } from '../../types';
+import { useClientsStore } from '../../stores/clients.store';
+import { usePlansStore } from '../../stores/plan.store';
+
 import NutritionTemplatePage from '../../components/NutritionTemplatePage.vue';
 
 const route = useRoute();
-const dataStore = useDataStore();
+const clientsStore = useClientsStore();
+const plansStore = usePlansStore();
 
 const clientId = computed(() => (route.params.clientId as string) || '');
 
 const selectedPlanId = ref<string>('new');
 const show = ref(true);
 
-// ✅ lista de templates
-const nutritionPlans = computed(() => dataStore.nutritionPlans || []);
 
 // ✅ cliente actual
 const client = computed(() => {
   if (!clientId.value) return null;
-  return dataStore.getClient?.(clientId.value) ?? null;
+  return clientsStore.getClientLocal(clientId.value) ?? null;
 });
 
-// ✅ plan seleccionado (template o el asignado)
-const selectedPlan = computed<NutritionPlan | null>(() => {
-  if (!selectedPlanId.value || selectedPlanId.value === 'new') return null;
-  return dataStore.getNutritionPlan?.(selectedPlanId.value) ?? null;
-});
 
 // Cuando cambia el clientId, si tiene plan asignado lo seleccionamos
 watch(
   client,
   (c) => {
     if (!c) return;
-    if (c.nutritionplanId) {
-      selectedPlanId.value = c.nutritionplanId;
+    if (c.nutrition_plan_id) {
+      selectedPlanId.value = c.nutrition_plan_id;
       show.value = true;
     } else {
       selectedPlanId.value = 'new';
@@ -45,12 +40,7 @@ watch(
 );
 
 onMounted(async () => {
-  // ✅ cargar planes
-  if (typeof (dataStore as any).loadNutritionsPlans === 'function') {
-    await (dataStore as any).loadNutritionsPlans();
-  } else if (typeof (dataStore as any).loadNutritionPlans === 'function') {
-    await (dataStore as any).loadNutritionPlans();
-  }
+  await plansStore.loadNutritionPlans();
 
   // ✅ si venía un id por ruta, usarlo
   const idFromRoute = route.params.id as string | undefined;
@@ -59,7 +49,7 @@ onMounted(async () => {
   } else {
     // ✅ si no hay id, intenta usar el plan del cliente si existe
     const c = client.value;
-    if (c?.nutritionplanId) selectedPlanId.value = c.nutritionplanId;
+    if (c?.nutrition_plan_id) selectedPlanId.value = c.nutrition_plan_id;
   }
 });
 </script>

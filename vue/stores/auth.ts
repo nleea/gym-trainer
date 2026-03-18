@@ -1,7 +1,15 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { api, setToken, setRefreshToken, removeToken, getToken, subscribeAuthEvents } from '../api'
+import {
+  api,
+  setToken,
+  setRefreshToken,
+  removeToken,
+  getToken,
+  subscribeAuthEvents,
+  revokeCurrentSession,
+} from '../api'
 
 type Role = 'client' | 'trainer' | null
 
@@ -18,7 +26,7 @@ export interface AuthUser {
   uid?: string       // === id
   clientid?: string  // === clientId (lowercase, como en Firebase)
   plan?: string
-  nutriton_plan?: string
+  nutrition_plan?: string
 }
 
 type RegisterPayload = {
@@ -112,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
     const stored = localStorage.getItem('auth_user')
     if (stored) {
       try {
-        const parsed: AuthUser = JSON.parse(stored)
+        const parsed = withAliases(JSON.parse(stored) as AuthUser)
         user.value = parsed
         role.value = parsed.role
         return
@@ -145,9 +153,10 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('auth_user', JSON.stringify(u))
 
       return { ok: true as const, role: u.role}
-    } catch (e: any) {
-      console.error('login error:', e?.message)
-      error.value = e?.message ?? 'Error al iniciar sesión'
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : 'Error al iniciar sesión'
+      console.error('login error:', errMsg)
+      error.value = errMsg
       return { ok: false as const, message: mapLoginError(e) }
     } finally {
       loading.value = false
@@ -175,9 +184,10 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('auth_user', JSON.stringify(u))
 
       return { ok: true as const, role: role.value }
-    } catch (e: any) {
-      console.error('register error:', e?.message)
-      error.value = e?.message ?? 'Error al crear cuenta'
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : 'Error al crear cuenta'
+      console.error('register error:', errMsg)
+      error.value = errMsg
       return { ok: false as const, message: mapRegisterError(e) }
     } finally {
       loading.value = false
@@ -195,24 +205,20 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    try {
-      await api.post('/auth/logout')
-    } catch {
-      // Ignore network/session errors and clear local state anyway.
-    }
     resetState()
+    await revokeCurrentSession()
   }
 
-  function mapLoginError(e: any): string {
-    const msg = (e?.message ?? '').toLowerCase()
+  function mapLoginError(e: unknown): string {
+    const msg = (e instanceof Error ? e.message : '').toLowerCase()
     if (msg.includes('401') || msg.includes('invalid') || msg.includes('incorrect'))
       return 'Correo o contraseña incorrectos'
     if (msg.includes('not found')) return 'No existe una cuenta con ese correo'
     return 'Error al iniciar sesión'
   }
 
-  function mapRegisterError(e: any): string {
-    const msg = (e?.message ?? '').toLowerCase()
+  function mapRegisterError(e: unknown): string {
+    const msg = (e instanceof Error ? e.message : '').toLowerCase()
     if (msg.includes('already') || msg.includes('existe') || msg.includes('duplicate'))
       return 'Ese correo ya está registrado'
     if (msg.includes('password')) return 'Contraseña muy débil (mínimo 6 caracteres)'

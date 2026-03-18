@@ -64,18 +64,21 @@ const LANGUAGES: { key: Language; flag: string }[] = [
   { key: 'pt', flag: '🇧🇷' },
 ]
 
+interface WindowWithI18n extends Window {
+  __i18n__?: { global: { locale: { value: string } } }
+}
+
 function selectLanguage(lang: Language) {
   localConfig.value = { ...localConfig.value, language: lang }
 
   // Preview inmediato
   ;(
-    store.i18n ??
-    (window as any).__i18n__?.global ??
+    (window as WindowWithI18n).__i18n__?.global ??
     { locale: { value: lang } }
   ).locale.value = lang
 
   import('@/plugins/i18n').then((m) => {
-    m.i18n.global.locale.value = lang as any
+    m.i18n.global.locale.value = lang
   })
 }
 
@@ -148,7 +151,7 @@ function onGlobalColorChange(token: keyof ThemeColors, value: string) {
 
   if (HEX_RE.test(value)) {
     hexErrors.value = { ...hexErrors.value, [token]: false }
-    store.applyTheme(localConfig.value.globalTheme)
+    store.reapplyTheme(localConfig.value.globalTheme)
   } else {
     hexErrors.value = { ...hexErrors.value, [token]: true }
   }
@@ -160,7 +163,7 @@ function resetGlobalTheme() {
     globalTheme: { ...DEFAULT_THEME },
   }
   hexErrors.value = {}
-  store.applyTheme(localConfig.value.globalTheme)
+  store.reapplyTheme(localConfig.value.globalTheme)
 }
 
 // ── Sección 3 — Temas por vista ───────────────────────────────────────────────
@@ -264,7 +267,7 @@ async function save() {
   } catch {
     toast.error(t('settings.appearance.save_error'))
     // Revertir preview
-    store.applyTheme()
+    store.reapplyTheme()
   } finally {
     saving.value = false
   }
@@ -277,7 +280,7 @@ function resetAll() {
 
   localConfig.value = cloneAppearanceConfig(DEFAULT_CONFIG)
   hexErrors.value = {}
-  store.applyTheme(localConfig.value.globalTheme)
+  store.reapplyTheme(localConfig.value.globalTheme)
 }
 
 // ── Guard: salir sin guardar ──────────────────────────────────────────────────
@@ -288,7 +291,7 @@ onBeforeRouteLeave((_to, _from, next) => {
 
   if (ok) {
     // Revertir preview al config guardado
-    store.applyTheme()
+    store.reapplyTheme()
     next()
   } else {
     next(false)

@@ -3,8 +3,8 @@ import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../../stores/auth';
-import type { TrainingLog } from '../../types';
-import type { UiExercise } from '../../components/ui-types';
+import type { TrainingLog, TrainingWeek, TrainingDay, Exercise, ExerciseLog, ExerciseEvidence } from '../../types';
+import type { UiExercise, UiSet } from '../../components/ui-types';
 import { useI18n } from 'vue-i18n';
 
 const { t: $t } = useI18n();
@@ -19,7 +19,7 @@ import PRCelebrationModal from '../../components/PRCelebrationModal.vue';
 import EvidenceModal from '../../components/EvidenceModal.vue';
 import EvidenceThreadCard from '../../components/EvidenceThreadCard.vue';
 import type { PRItem } from '../../components/PRCelebrationModal.vue';
-import { getLastPerformance } from '../../repo/trainingLogsrepo';
+import { getLastPerformance } from '../../repo/trainingLogsRepo';
 import type { ExerciseItem } from '../../repo/exercisesRepo';
 import { useEvidencesStore } from '../../stores/evidences.store';
 import { useAppToast } from '@/composables/useAppToast';
@@ -83,8 +83,8 @@ type WorkoutDraft = {
   workoutDuration: number;
   notes: string;
   workoutEffort: number;
-  plannedExercises: any[];
-  extraExercises: any[];
+  plannedExercises: UiExercise[];
+  extraExercises: UiExercise[];
   sessionStart: number;
   savedAt: number;
 };
@@ -102,7 +102,7 @@ const weekDaysUi = [
 // ── Display-only: session elapsed timer ────────────────────────────────────
 const sessionStart = ref(Date.now());
 const sessionTick = ref(Date.now());
-let sessionIntervalId: any;
+let sessionIntervalId: ReturnType<typeof setInterval>;
 onMounted(() => {
   sessionIntervalId = setInterval(() => {
     sessionTick.value = Date.now();
@@ -129,14 +129,14 @@ function toLocalYmd(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function clamp(n: any, min: number, max: number) {
+function clamp(n: number | string | null | undefined, min: number, max: number) {
   const x = Number(n);
   if (!Number.isFinite(x)) return min;
   return Math.max(min, Math.min(max, x));
 }
 
 /** Normaliza sets a un count */
-function normalizeSets(ex: any, desiredCount: number) {
+function normalizeSets(ex: UiExercise, desiredCount: number) {
   const count = clamp(desiredCount, 1, 20);
   if (!Array.isArray(ex.sets)) ex.sets = [];
   ex.setsCount = count;
@@ -166,14 +166,14 @@ const todayLog = computed(() => {
 
   const targetDate = workoutDate.value; // YYYY-MM-DD
   return (
-    list.find((l: any) => {
+    list.find((l: TrainingLog) => {
       const d = l.date instanceof Date ? l.date : new Date(l.date);
       return toLocalYmd(d) === targetDate;
     }) ?? null
   );
 });
 
-const currentTrainingLogId = computed(() => String((todayLog.value as any)?.id || ''));
+const currentTrainingLogId = computed(() => String(todayLog.value?.id || ''));
 
 const isEditingExisting = computed(() => !!todayLog.value);
 const allExercises = computed(() => [
@@ -192,11 +192,11 @@ const activePlanWeek = computed(() => {
 
   return (
     plan.weeks?.find(
-      (w: any) =>
+      (w: TrainingWeek) =>
         Number(w.weekNumber) ===
         getActiveWeekIndexFromAssignedAt(
           new Date(),
-          plan.startDate?.toDate() ?? new Date(),
+          plan.startDate instanceof Date ? plan.startDate : new Date(plan.startDate ?? Date.now()),
           4,
         ),
     ) ??
@@ -212,7 +212,7 @@ const todayPlanWorkout = computed(() => {
   if (!week) return null;
 
   const key = dayKeyForSelectedDate.value;
-  return week.days?.find((d: any) => d.day === key) ?? null;
+  return week.days?.find((d: TrainingDay) => d.day === key) ?? null;
 });
 
 /** ---------- UI actions ---------- */
@@ -234,17 +234,17 @@ const addExtraExerciseFromLibrary = (exercise: ExerciseItem) => {
       { reps: 10, weight: 0, completed: false },
       { reps: 10, weight: 0, completed: false },
     ],
-  } as any);
+  } as UiExercise);
 };
 
 const removePlanned = (id: string) => {
   plannedExercises.value = plannedExercises.value.filter(
-    (e: any) => e.exerciseId !== id,
+    (e: UiExercise) => e.exerciseId !== id,
   );
 };
 const removeExtra = (id: string) => {
   extraExercises.value = extraExercises.value.filter(
-    (e: any) => e.exerciseId !== id,
+    (e: UiExercise) => e.exerciseId !== id,
   );
 };
 
@@ -254,7 +254,7 @@ const isValidWorkout = computed(() => {
     workoutName.value.trim() !== '' &&
     workoutDuration.value > 0 &&
     allExercises.value.length > 0 &&
-    allExercises.value.every((e: any) => {
+    allExercises.value.every((e: UiExercise) => {
       const nameOk = String(e.name ?? '').trim() !== '';
       const setsOk = Array.isArray(e.sets) && e.sets.length > 0;
       return nameOk && setsOk;
@@ -269,24 +269,26 @@ const isDraftMode = computed(
     draftHydratedKey.value === draftStorageKey.value,
 );
 
-function serializeExercises(list: any[]) {
+function serializeExercises(list: UiExercise[]) {
   return JSON.parse(JSON.stringify(list ?? []));
 }
 
-function normalizeDraftExercise(ex: any, fallbackSource: 'plan' | 'extra') {
-  const setsRaw = Array.isArray(ex?.sets) ? ex.sets : [];
-  const row: any = {
-    source: ex?.source ?? fallbackSource,
-    planExerciseId: ex?.planExerciseId ?? ex?.exerciseId ?? crypto.randomUUID(),
-    exerciseId: ex?.exerciseId ?? ex?.planExerciseId ?? crypto.randomUUID(),
+function normalizeDraftExercise(ex: Record<string, unknown>, fallbackSource: 'plan' | 'extra'): UiExercise {
+  const setsRaw = Array.isArray(ex?.sets) ? ex.sets as Record<string, unknown>[] : [];
+  const row: UiExercise = {
+    source: (ex?.source as UiExercise['source']) ?? fallbackSource,
+    planExerciseId: String(ex?.planExerciseId ?? ex?.exerciseId ?? crypto.randomUUID()),
+    exerciseId: String(ex?.exerciseId ?? ex?.planExerciseId ?? crypto.randomUUID()),
     name: String(ex?.name ?? ''),
-    rest: clamp(ex?.rest ?? 60, 0, 600),
+    rest: clamp(ex?.rest as number ?? 60, 0, 600),
     notes: String(ex?.notes ?? ''),
-    setsCount: clamp(ex?.setsCount ?? setsRaw.length ?? 3, 1, 20),
-    sets: setsRaw.map((s: any) => ({
-      reps: clamp(s?.reps ?? 10, 0, 200),
-      weight: clamp(s?.weight ?? 0, 0, 500),
-      completed: s?.completed ?? false,
+    setsCount: clamp(ex?.setsCount as number ?? setsRaw.length ?? 3, 1, 20),
+    reps: 0,
+    weight: 0,
+    sets: setsRaw.map((s: Record<string, unknown>) => ({
+      reps: clamp(s?.reps as number ?? 10, 0, 200),
+      weight: clamp(s?.weight as number ?? 0, 0, 500),
+      completed: (s?.completed as boolean) ?? false,
     })),
   };
   normalizeSets(row, row.setsCount);
@@ -330,13 +332,13 @@ function restoreWorkoutDraft() {
     workoutEffort.value = clamp(parsed.workoutEffort ?? 6, 1, 10);
 
     plannedExercises.value = Array.isArray(parsed.plannedExercises)
-      ? parsed.plannedExercises.map((ex: any) =>
-          normalizeDraftExercise(ex, 'plan'),
+      ? parsed.plannedExercises.map((ex: UiExercise) =>
+          normalizeDraftExercise(ex as unknown as Record<string, unknown>, 'plan'),
         )
       : plannedExercises.value;
     extraExercises.value = Array.isArray(parsed.extraExercises)
-      ? parsed.extraExercises.map((ex: any) =>
-          normalizeDraftExercise(ex, 'extra'),
+      ? parsed.extraExercises.map((ex: UiExercise) =>
+          normalizeDraftExercise(ex as unknown as Record<string, unknown>, 'extra'),
         )
       : extraExercises.value;
 
@@ -395,18 +397,20 @@ watch(
     // console.log('paso')
 
     // base desde plan con sets[] reales
-    const base = (planWorkout.exercises ?? []).map((ex: any) => {
+    const base = (planWorkout.exercises ?? []).map((ex: Exercise) => {
       const setsCount = clamp(ex.sets ?? 3, 1, 20);
       const reps = clamp(ex.reps ?? 10, 0, 200);
       const weight = clamp(ex.weight ?? 0, 0, 500);
 
-      const row: any = {
+      const row: UiExercise = {
         source: 'plan',
         planExerciseId: ex.id,
         exerciseId: ex.id,
         name: ex.name ?? '',
         rest: clamp(ex.rest ?? 60, 0, 600),
         notes: '',
+        reps: 0,
+        weight: 0,
         setsCount,
         sets: Array.from({ length: setsCount }, () => ({
           reps,
@@ -438,21 +442,21 @@ watch(
 
     // con log: campos base
     workoutName.value = String(
-      (log as any).name ??
+      log.name ??
         workoutName.value ??
         `Entrenamiento ${planWorkout.day}`,
     );
-    workoutDuration.value = Number((log as any).duration ?? 0);
-    notes.value = String((log as any).notes ?? '');
-    workoutEffort.value = Number((log as any).effort ?? 6);
+    workoutDuration.value = Number(log.duration ?? 0);
+    notes.value = String(log.notes ?? '');
+    workoutEffort.value = Number(log.effort ?? 6);
 
     // index log exercises
-    const logMap = new Map<string, any>();
-    for (const e of (log as any).exercises ?? [])
+    const logMap = new Map<string, ExerciseLog>();
+    for (const e of log.exercises ?? [])
       logMap.set(String(e.exerciseId), e);
 
     // merge planned
-    plannedExercises.value = base.map((p: any) => {
+    plannedExercises.value = base.map((p: UiExercise) => {
       const le = logMap.get(String(p.planExerciseId));
       if (!le) return p;
 
@@ -460,7 +464,7 @@ watch(
       const merged = { ...p };
 
       if (savedSets.length) {
-        merged.sets = savedSets.map((s: any) => ({
+        merged.sets = savedSets.map((s: { reps: number; weight: number; rpe?: number; completed: boolean }) => ({
           reps: clamp(s.reps, 0, 200),
           weight: clamp(s.weight, 0, 500),
           completed: s.completed ?? false,
@@ -473,18 +477,20 @@ watch(
     });
 
     // extras: logs que NO están en el plan
-    const planIds = new Set(base.map((x: any) => String(x.planExerciseId)));
-    extraExercises.value = ((log as any).exercises ?? [])
-      .filter((e: any) => !planIds.has(String(e.exerciseId)))
-      .map((e: any) => {
+    const planIds = new Set(base.map((x: UiExercise) => String(x.planExerciseId)));
+    extraExercises.value = (log.exercises ?? [])
+      .filter((e: ExerciseLog) => !planIds.has(String(e.exerciseId)))
+      .map((e: ExerciseLog) => {
         const savedSets = Array.isArray(e.sets) ? e.sets : [];
-        const row: any = {
+        const row: UiExercise = {
           source: 'extra',
           exerciseId: crypto.randomUUID(),
           planExerciseId: e.exerciseId,
           name: e.exerciseName ?? '',
           rest: 60,
           notes: '',
+          reps: 0,
+          weight: 0,
           setsCount: clamp(savedSets.length || 3, 1, 20),
           sets: (savedSets.length
             ? savedSets
@@ -493,7 +499,7 @@ watch(
                 weight: 0,
                 completed: false,
               }))
-          ).map((s: any) => ({
+          ).map((s: { reps: number; weight: number; rpe?: number; completed: boolean }) => ({
             reps: clamp(s.reps ?? 10, 0, 200),
             weight: clamp(s.weight ?? 0, 0, 500),
             completed: s.completed ?? false,
@@ -505,10 +511,10 @@ watch(
 
     // Fetch last performance for all exercises
     const allIds = [
-      ...plannedExercises.value.map((e: any) =>
+      ...plannedExercises.value.map((e: UiExercise) =>
         String(e.planExerciseId ?? e.exerciseId),
       ),
-      ...extraExercises.value.map((e: any) =>
+      ...extraExercises.value.map((e: UiExercise) =>
         String(e.planExerciseId ?? e.exerciseId),
       ),
     ].filter(Boolean);
@@ -557,9 +563,9 @@ const myEvidences = computed(() => {
   const cid = clientId.value;
   if (!cid) return [];
   return [...evidencesStore.getClientEvidences(cid)].sort(
-    (a: any, b: any) =>
-      new Date(b.submittedAt as any).getTime() -
-      new Date(a.submittedAt as any).getTime(),
+    (a: ExerciseEvidence, b: ExerciseEvidence) =>
+      new Date(b.submittedAt).getTime() -
+      new Date(a.submittedAt).getTime(),
   );
 });
 
@@ -584,19 +590,19 @@ watch(
   { immediate: false },
 );
 
-function openEvidenceForExercise(ex: any) {
+function openEvidenceForExercise(ex: UiExercise) {
   if (!currentTrainingLogId.value || !todayLog.value) {
     toast.error('Primero guarda el entrenamiento para poder subir evidencia');
     return;
   }
   selectedEvidence.value = {
     exerciseId: String(ex.planExerciseId ?? ex.exerciseId),
-    exerciseName: String(ex.name ?? ex.exerciseName ?? 'Ejercicio'),
+    exerciseName: String(ex.name ?? 'Ejercicio'),
   };
   showEvidenceModal.value = true;
 }
 
-function evidenceStatusForExercise(ex: any): 'none' | 'pending' | 'responded' {
+function evidenceStatusForExercise(ex: UiExercise): 'none' | 'pending' | 'responded' {
   const logId = currentTrainingLogId.value;
   if (!logId) return 'none';
   const evidence = evidencesStore.getEvidenceByLogExercise(
@@ -643,7 +649,7 @@ const saveWorkout = async () => {
       duration: clamp(workoutDuration.value, 0, 600),
       notes: notes.value || undefined,
       effort: clamp(workoutEffort.value, 1, 10),
-      exercises: allExercises.value.map((ex: any) => {
+      exercises: allExercises.value.map((ex: UiExercise) => {
         normalizeSets(
           ex,
           ex.setsCount ?? (Array.isArray(ex.sets) ? ex.sets.length : 3),
@@ -651,7 +657,7 @@ const saveWorkout = async () => {
         return {
           exerciseId: ex.planExerciseId ?? ex.exerciseId,
           exerciseName: String(ex.name ?? '').trim(),
-          sets: (ex.sets ?? []).map((s: any) => ({
+          sets: (ex.sets ?? []).map((s: UiSet) => ({
             reps: clamp(s.reps, 0, 200),
             weight: clamp(s.weight, 0, 500),
             completed: s.completed ?? false,
@@ -669,8 +675,8 @@ const saveWorkout = async () => {
     } else {
       router.push('/client');
     }
-  } catch (e: any) {
-    formError.value = e?.message ?? 'No se pudo guardar el entrenamiento';
+  } catch (e: unknown) {
+    formError.value = e instanceof Error ? e.message : 'No se pudo guardar el entrenamiento';
   } finally {
     saving.value = false;
   }
@@ -706,10 +712,10 @@ onUnmounted(() =>
 // ── Display-only: real-time workout stats ──────────────────────────────────
 const totalVolume = computed(() =>
   allExercises.value.reduce(
-    (sum: number, ex: any) =>
+    (sum: number, ex: UiExercise) =>
       sum +
       (ex.sets ?? []).reduce(
-        (s2: number, s: any) =>
+        (s2: number, s: UiSet) =>
           s2 + (s.completed ? Number(s.reps ?? 0) * Number(s.weight ?? 0) : 0),
         0,
       ),
@@ -718,14 +724,14 @@ const totalVolume = computed(() =>
 );
 const completedSetsCount = computed(() =>
   allExercises.value.reduce(
-    (n: number, ex: any) =>
-      n + (ex.sets ?? []).filter((s: any) => s.completed).length,
+    (n: number, ex: UiExercise) =>
+      n + (ex.sets ?? []).filter((s: UiSet) => s.completed).length,
     0,
   ),
 );
 const totalSetsCount = computed(() =>
   allExercises.value.reduce(
-    (n: number, ex: any) => n + (ex.sets ?? []).length,
+    (n: number, ex: UiExercise) => n + (ex.sets ?? []).length,
     0,
   ),
 );

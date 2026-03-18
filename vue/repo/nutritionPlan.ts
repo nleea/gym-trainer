@@ -3,7 +3,32 @@ import { api } from '../api'
 import type { NutritionPlan } from '../types'
 import { toDate } from './fireRepo'
 
-function mapPlan(d: any): NutritionPlan {
+interface RawNutritionPlan extends Record<string, unknown> {
+  is_template?: boolean
+  isTemplate?: boolean
+  client_id?: string | null
+  clientId?: string | null
+  source_template_id?: string | null
+  sourceTemplateId?: string | null
+  assigned_at?: unknown
+  assignedAt?: unknown
+  copies_count?: number | null
+  copiesCount?: number | null
+  createdAt?: unknown
+  created_at?: unknown
+  updatedAt?: unknown
+  updated_at?: unknown
+}
+
+interface NutritionPlanWithExtras extends NutritionPlan {
+  water_ml?: number
+  waterMl?: number
+  fiberG?: number
+  mealsPerDay?: number
+  notes?: string
+}
+
+function mapPlan(d: RawNutritionPlan): NutritionPlan {
   return {
     ...d,
     isTemplate: d.is_template ?? d.isTemplate ?? false,
@@ -17,6 +42,7 @@ function mapPlan(d: any): NutritionPlan {
 }
 
 export async function createNutritionPlan(_trainerId: string, data: NutritionPlan): Promise<string> {
+  const dataExt = data as NutritionPlanWithExtras
   const res = await api.post<{ id: string }>('/nutrition-plans', {
     name: data.name,
     description: data.description ?? '',
@@ -25,7 +51,7 @@ export async function createNutritionPlan(_trainerId: string, data: NutritionPla
     target_protein: data.targetProtein,
     target_carbs: data.targetCarbs,
     target_fat: data.targetFat,
-    water_ml: (data as any).water_ml ?? (data as any).waterMl,
+    water_ml: dataExt.water_ml ?? dataExt.waterMl,
     recommended_foods: data.recommendedFoods ?? [],
     forbidden_foods: data.forbiddenFoods ?? [],
     guidelines: data.guidelines ?? [],
@@ -34,7 +60,7 @@ export async function createNutritionPlan(_trainerId: string, data: NutritionPla
 }
 
 export async function listNutritionPlansByEntrenator(_trainerId?: string): Promise<NutritionPlan[]> {
-  const list = await api.get<any[]>('/nutrition-plans/templates')
+  const list = await api.get<RawNutritionPlan[]>('/nutrition-plans/templates')
   return list.map(mapPlan)
 }
 
@@ -42,7 +68,7 @@ export const listNutritionPlans = listNutritionPlansByEntrenator
 
 export async function getNutritionPlanById(id: string): Promise<NutritionPlan | null> {
   try {
-    const d = await api.get<any>(`/nutrition-plans/${id}`)
+    const d = await api.get<RawNutritionPlan>(`/nutrition-plans/${id}`)
     return mapPlan(d)
   } catch {
     return null
@@ -50,6 +76,7 @@ export async function getNutritionPlanById(id: string): Promise<NutritionPlan | 
 }
 
 export async function updateNutritionPlan(id: string, data: Partial<NutritionPlan>): Promise<void> {
+  const dataExt = data as Partial<NutritionPlanWithExtras>
   const endpoint = data.isTemplate ? `/nutrition-plans/templates/${id}` : `/nutrition-plans/${id}`
   await api.put(endpoint, {
     name: data.name,
@@ -58,10 +85,10 @@ export async function updateNutritionPlan(id: string, data: Partial<NutritionPla
     target_protein: data.targetProtein,
     target_carbs: data.targetCarbs,
     target_fat: data.targetFat,
-    fiber_g: (data as any).fiberG,
-    water_ml: (data as any).water_ml ?? (data as any).waterMl,
-    meals_per_day: (data as any).mealsPerDay,
-    notes: (data as any).notes,
+    fiber_g: dataExt.fiberG,
+    water_ml: dataExt.water_ml ?? dataExt.waterMl,
+    meals_per_day: dataExt.mealsPerDay,
+    notes: dataExt.notes,
   })
 }
 
@@ -76,7 +103,7 @@ export async function assignNutritionTemplateToClient(
   durationWeeks: number,
   _uid: string
 ): Promise<NutritionPlan | undefined> {
-  const plan = await api.post<any>(`/nutrition-plans/${templatePlanId}/assign`, {
+  const plan = await api.post<RawNutritionPlan>(`/nutrition-plans/${templatePlanId}/assign`, {
     client_id: clientId,
     start_date: startDate,
     duration_weeks: durationWeeks,

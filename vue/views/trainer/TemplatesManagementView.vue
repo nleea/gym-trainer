@@ -2,14 +2,15 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlansStore } from '../../stores/plan.store'
+import type { TrainingPlan, NutritionPlan } from '../../types'
 import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const plansStore = usePlansStore()
 const { trainingPlans, nutritionPlans } = storeToRefs(plansStore)
 
-const trainingTemplates = computed(() => (trainingPlans.value || []).filter((p: any) => p.isTemplate !== false))
-const nutritionTemplates = computed(() => (nutritionPlans.value || []).filter((p: any) => p.isTemplate !== false))
+const trainingTemplates = computed(() => (trainingPlans.value || []).filter((p: TrainingPlan) => p.isTemplate !== false))
+const nutritionTemplates = computed(() => (nutritionPlans.value || []).filter((p: NutritionPlan) => p.isTemplate !== false))
 
 onMounted(async () => {
   await Promise.all([plansStore.loadTrainingPlans(), plansStore.loadNutritionPlans()])

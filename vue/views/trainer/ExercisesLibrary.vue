@@ -36,6 +36,8 @@ const muscleGroups: (MuscleGroup | 'Todos')[] = [
   'Cardio',
 ];
 
+const muscleGroupsWithoutTodos = muscleGroups.filter(g => g !== 'Todos') as MuscleGroup[];
+
 // Form crear ejercicio
 const exName = ref('');
 const exGroup = ref<MuscleGroup>('Piernas');
@@ -85,7 +87,7 @@ const filteredLibrary = computed(() => {
 
 function toggleSelect(id: string) {
   const set = new Set(selectedIds.value);
-  set.has(id) ? set.delete(id) : set.add(id);
+  if (set.has(id)) { set.delete(id) } else { set.add(id) }
   selectedIds.value = set;
 }
 
@@ -108,7 +110,7 @@ async function createExercise() {
       equipment: exEquipment.value.trim() || undefined,
       notes: exNotes.value.trim() || undefined,
       active: true,
-    } as any);
+    });
 
     exName.value = '';
     exEquipment.value = '';
@@ -125,7 +127,7 @@ function openEdit(ex: Exercise) {
   editName.value = ex.name ?? '';
   editGroup.value = ex.muscleGroup;
   editEquipment.value = ex.equipment ?? '';
-  editNotes.value = (ex as any).notes ?? '';
+  editNotes.value = ex.notes ?? '';
   showEditExerciseModal.value = true;
 }
 
@@ -149,7 +151,7 @@ async function saveEdit() {
       muscleGroup: editGroup.value,
       equipment: editEquipment.value.trim() || undefined,
       notes: editNotes.value.trim() || undefined,
-    } as any);
+    });
 
     closeEdit();
   } finally {
@@ -166,7 +168,7 @@ async function deleteExercise(ex: Exercise) {
 
   deleting.value = true;
   try {
-    await libApi.value.updateExercise(ex.id, { active: false } as any);
+    await libApi.value.updateExercise(ex.id, { active: false });
 
     const set = new Set(selectedIds.value);
     set.delete(ex.id);
@@ -278,10 +280,10 @@ function isSelected(id: string) {
                 <span v-if="ex.equipment">• {{ ex.equipment }}</span>
               </p>
               <p
-                v-if="(ex as any).notes"
+                v-if="ex.notes"
                 class="text-xs text-muted-foreground mt-1"
               >
-                {{ (ex as any).notes }}
+                {{ ex.notes }}
               </p>
             </div>
           </label>
@@ -363,9 +365,8 @@ function isSelected(id: string) {
             class="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
           >
             <option
-              v-for="g in muscleGroups"
+              v-for="g in muscleGroupsWithoutTodos"
               :key="g"
-              v-if="g !== 'Todos'"
               :value="g"
             >
               {{ g }}
@@ -470,9 +471,8 @@ function isSelected(id: string) {
             class="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
           >
             <option
-              v-for="g in muscleGroups"
+              v-for="g in muscleGroupsWithoutTodos"
               :key="g"
-              v-if="g !== 'Todos'"
               :value="g"
             >
               {{ g }}

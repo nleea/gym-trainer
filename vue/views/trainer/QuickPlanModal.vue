@@ -8,7 +8,7 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div class="modal-backdrop" @click.self="$emit('close')">
+      <div v-show="true" class="modal-backdrop" @click.self="$emit('close')">
         <Transition
           enter-active-class="transition-all duration-200 ease-out"
           enter-from-class="opacity-0 translate-y-4 scale-95"
@@ -66,7 +66,7 @@
                     v-for="plan in currentPlans"
                     :key="plan.id"
                     :class="['plan-row', selectedPlanId === plan.id && 'plan-row-selected']"
-                    @click="selectedPlanId = plan.id"
+                    @click="selectedPlanId = plan.id ?? null"
                   >
                     <div class="flex items-center gap-3 flex-1 min-w-0">
                       <div :class="['plan-radio', selectedPlanId === plan.id && 'plan-radio-checked']">
@@ -149,7 +149,7 @@ const assigning = ref(false)
 
 const currentPlans = computed(() =>
   (activeTab.value === 'training' ? trainingPlans.value : nutritionPlans.value).filter(
-    (plan: any) => plan.isTemplate !== false,
+    (plan: TrainingPlan | NutritionPlan) => plan.isTemplate !== false,
   )
 )
 

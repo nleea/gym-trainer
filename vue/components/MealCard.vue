@@ -165,9 +165,10 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import type { MealLogFull } from '../repo/nutritionRepo'
+import type { Meal } from '../types'
 
 const props = defineProps<{
-  meal: any       // plan meal object
+  meal: Meal
   mealKey: string
   todayLogs: MealLogFull[]
   loading?: boolean

@@ -119,9 +119,20 @@ function alignToLabels(data: SeriesPoint[]): Array<number | null> {
   return orderedDates.value.map(d => map.has(d.getTime()) ? map.get(d.getTime())! : null)
 }
 
+interface LineDataset {
+  label: string
+  data: Array<number | null>
+  borderColor: string
+  backgroundColor: string
+  tension: number
+  fill: boolean
+  pointRadius: number
+  spanGaps: boolean
+}
+
 const datasets = computed(() => {
   const s = series.value as Record<MetricKey, SeriesPoint[]>
-  const out: any[] = []
+  const out: LineDataset[] = []
 
   for (const key of showProp.value) {
     if (!activeMetrics.value.includes(key)) continue

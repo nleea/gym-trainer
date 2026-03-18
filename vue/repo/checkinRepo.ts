@@ -28,7 +28,23 @@ export interface WeeklyCheckinPayload {
   notes?: string | null
 }
 
-function mapCheckin(d: any): WeeklyCheckin {
+interface RawCheckin {
+  id: string
+  client_id: string
+  trainer_id: string
+  week_start: string
+  sleep_hours?: number | null
+  sleep_quality?: number | null
+  stress_level?: number | null
+  energy_level?: number | null
+  muscle_soreness?: number | null
+  mood?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+function mapCheckin(d: RawCheckin): WeeklyCheckin {
   return {
     id: d.id,
     clientId: d.client_id,
@@ -47,19 +63,19 @@ function mapCheckin(d: any): WeeklyCheckin {
 }
 
 export async function createOrUpdateCheckin(data: WeeklyCheckinPayload): Promise<WeeklyCheckin> {
-  const res = await api.post<any>('/checkins', data)
+  const res = await api.post<RawCheckin>('/checkins', data)
   return mapCheckin(res)
 }
 
 export async function listCheckins(clientId: string): Promise<WeeklyCheckin[]> {
-  const list = await api.get<any[]>(`/checkins?client_id=${clientId}`)
+  const list = await api.get<RawCheckin[]>(`/checkins?client_id=${clientId}`)
   return list.map(mapCheckin)
 }
 
 export async function getCurrentCheckin(clientId?: string): Promise<WeeklyCheckin | null> {
   const url = clientId ? `/checkins/current?client_id=${clientId}` : '/checkins/current'
   try {
-    const res = await api.get<any>(url)
+    const res = await api.get<RawCheckin | null>(url)
     return res ? mapCheckin(res) : null
   } catch {
     return null
@@ -70,7 +86,7 @@ export async function updateCheckin(
   checkinId: string,
   data: Partial<WeeklyCheckinPayload>,
 ): Promise<WeeklyCheckin> {
-  const res = await api.put<any>(`/checkins/${checkinId}`, data)
+  const res = await api.put<RawCheckin>(`/checkins/${checkinId}`, data)
   return mapCheckin(res)
 }
 

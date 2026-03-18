@@ -6,7 +6,22 @@ import type { AssignedTrainingPlan } from '../types'
 import { toDate } from './fireRepo'
 import { toYmdLocal } from '../../lib/utils'
 
-function mapAssigned(d: any): AssignedTrainingPlan {
+interface RawAssignedPlan extends Record<string, unknown> {
+  startDate?: unknown
+  start_date?: unknown
+  endDate?: unknown
+  end_date?: unknown
+}
+
+interface RawClientSummary {
+  training_plan?: Record<string, unknown>
+}
+
+interface RawClientRecord {
+  plan_id?: string
+}
+
+function mapAssigned(d: RawAssignedPlan): AssignedTrainingPlan {
   return {
     ...d,
     startDate: toDate(d.startDate ?? d.start_date) ?? new Date(),
@@ -28,7 +43,7 @@ export async function getActiveTrainingPlanByClient(
   clientId: string
 ): Promise<AssignedTrainingPlan | null> {
   try {
-    const summary = await api.get<any>(`/clients/${clientId}/summary`)
+    const summary = await api.get<RawClientSummary>(`/clients/${clientId}/summary`)
     if (!summary?.training_plan) return null
     return mapAssigned({ ...summary.training_plan, clientId, status: 'active' })
   } catch {
@@ -37,7 +52,7 @@ export async function getActiveTrainingPlanByClient(
 }
 
 export async function listAssignedTrainingPlans(clientId: string): Promise<AssignedTrainingPlan[]> {
-  const client = await api.get<any>(`/clients/${clientId}`)
+  const client = await api.get<RawClientRecord>(`/clients/${clientId}`)
   if (!client?.plan_id) return []
   return [mapAssigned({ id: client.plan_id, clientId, planId: client.plan_id, status: 'active' })]
 }
