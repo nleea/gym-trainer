@@ -44,7 +44,7 @@ const navigation = computed(() => [
     icon: 'trending',
   },
   {
-    name: t('nav.client.log'),
+    name: t('nav.client.metrics'),
     path: '/client/metrics',
     icon: 'body',
   },
