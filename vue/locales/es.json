@@ -21,6 +21,7 @@
       "home": "Inicio",
       "training": "Calendario",
       "log": "Registrar",
+      "metrics": "Medidas",
       "nutrition": "Nutrición",
       "progress": "Progreso",
       "settings": "Settings",
@@ -191,6 +192,11 @@
     "metrics": {
       "title": "Evolución corporal",
       "subtitle": "Mediciones, composición, perímetros, fotos y notas.",
+      "hero": {
+        "label": "Medidas",
+        "title": "Mi Evolución Corporal",
+        "subtitle": "Registra tus medidas, fotos y notas para ver tu progreso a lo largo del tiempo."
+      },
       "tabs": {
         "overview": "Resumen",
         "composition": "Composición",
@@ -206,9 +212,22 @@
         "waist": "Cintura",
         "abdomen": "Abdomen (ombligo)"
       },
+      "empty": {
+        "title": "Sin mediciones aún",
+        "desc": "Registra tu primera medición para comenzar a ver tu progreso.",
+        "cta": "Registrar primera medición"
+      },
+      "registerNow": "Registrar medición",
       "latestPhotos": "Últimas fotos",
       "noPhotos": "Aún no hay fotos.",
       "photoTip": "Tip: pega URLs de imágenes al registrar una medición.",
+      "uploadTitle": "Subir fotos",
+      "uploading": "Subiendo imágenes...",
+      "uploadSuccess": "{n} foto(s) subida(s) correctamente",
+      "uploadError": "No se pudieron subir las imágenes",
+      "bodyScanner": "Body Scanner",
+      "dragHint": "Arrastra para rotar · Scroll para zoom",
+      "liveData": "DATOS EN VIVO",
       "composition": {
         "title": "Composición corporal",
         "desc": "Registra lo que tengas: báscula inteligente, caliper, etc.",

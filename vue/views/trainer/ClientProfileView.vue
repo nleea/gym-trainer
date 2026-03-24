@@ -15,6 +15,9 @@ import type { TrainingLog, ExerciseLog, MealLog } from '../../types';
 import ProgressTab from '../../components/ProgressTab.vue';
 import AssignTrainingPlanModal from '../../components/AssignTrainingPlanModal.vue';
 import AssignNutritionPlanModal from '../../components/AssignNutritionPlanModal.vue';
+import CreatePlanWithAIModal from '../../components/CreatePlanWithAIModal.vue';
+import AdherenceCard from '../../components/AdherenceCard.vue';
+import WeeklyVolumeChart from '../../components/WeeklyVolumeChart.vue';
 import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 import ClientDiaryTab from './ClientDiaryTab.vue'
 import ReportsTab from '../../components/ReportsTab.vue'
@@ -51,6 +54,7 @@ const todayWorkoutLogs = computed(() => {
 
 const showAssignModal = ref(false);
 const showAssignModalNutrition = ref(false);
+const showAIModal = ref(false);
 const loadingClient = ref(true);
 
 // -------- helpers UI --------
@@ -271,6 +275,12 @@ const toggleStatus = () => {
       </div>
     </div>
 
+    <!-- Adherence + Volume -->
+    <div class="grid gap-4 lg:grid-cols-2">
+      <AdherenceCard :client-id="clientId" />
+      <WeeklyVolumeChart :client-id="clientId" />
+    </div>
+
     <!-- Tabs -->
     <div class="overflow-x-auto rounded-2xl border border-border bg-card px-2 py-1.5">
       <div class="flex min-w-max gap-1">
@@ -356,7 +366,22 @@ const toggleStatus = () => {
             </div>
 
             <!-- Actions -->
-            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <!-- Crear con IA -->
+              <button
+                type="button"
+                @click="showAIModal = true"
+                class="group flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-left transition hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 transition group-hover:bg-primary/25">
+                  <span class="text-base">🤖</span>
+                </div>
+                <div class="min-w-0">
+                  <p class="font-medium text-primary">Crear con IA</p>
+                  <p class="text-xs text-muted-foreground">Genera plan con ChatGPT o Claude</p>
+                </div>
+              </button>
+
               <!-- Ver / Editar -->
               <RouterLink
                 :to="
@@ -952,5 +977,13 @@ const toggleStatus = () => {
     :trainer-id="trainerId"
     @assigned="refreshAssignedPlans"
     @close="showAssignModalNutrition = false"
+  />
+
+  <CreatePlanWithAIModal
+    v-if="showAIModal && client"
+    :client="client"
+    :trainer-id="trainerId"
+    @created="refreshAssignedPlans"
+    @close="showAIModal = false"
   />
 </template>

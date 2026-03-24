@@ -21,6 +21,7 @@
       "home": "Home",
       "training": "Calendar",
       "log": "Log",
+      "metrics": "Metrics",
       "nutrition": "Nutrition",
       "progress": "Progress",
       "settings": "Settings",
@@ -191,6 +192,11 @@
     "metrics": {
       "title": "Body evolution",
       "subtitle": "Measurements, composition, circumferences, photos and notes.",
+      "hero": {
+        "label": "Metrics",
+        "title": "My Body Evolution",
+        "subtitle": "Track your measurements, photos and notes to see your progress over time."
+      },
       "tabs": {
         "overview": "Overview",
         "composition": "Composition",
@@ -206,9 +212,22 @@
         "waist": "Waist",
         "abdomen": "Abdomen (navel)"
       },
+      "empty": {
+        "title": "No measurements yet",
+        "desc": "Log your first measurement to start tracking your progress.",
+        "cta": "Log first measurement"
+      },
+      "registerNow": "Log measurement",
       "latestPhotos": "Latest photos",
       "noPhotos": "No photos yet.",
       "photoTip": "Tip: paste image URLs when logging a measurement.",
+      "uploadTitle": "Upload photos",
+      "uploading": "Uploading images...",
+      "uploadSuccess": "{n} photo(s) uploaded successfully",
+      "uploadError": "Could not upload images",
+      "bodyScanner": "Body Scanner",
+      "dragHint": "Drag to rotate · Scroll to zoom",
+      "liveData": "LIVE DATA",
       "composition": {
         "title": "Body composition",
         "desc": "Record what you have: smart scale, calipers, etc.",
