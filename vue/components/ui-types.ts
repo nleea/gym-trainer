@@ -2,6 +2,7 @@
 export type UiSet = {
   reps: number;
   weight: number;
+  rpe?: number;
   completed: boolean;
 };
 

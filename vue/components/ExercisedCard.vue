@@ -157,6 +157,19 @@
             />
             <span class="text-[10px] text-muted-foreground shrink-0">kg</span>
 
+            <!-- RPE (optional, 1-10) -->
+            <input
+              type="number" min="1" max="10"
+              :value="s.rpe ?? ''"
+              @input="updateSet(Number(sidx), { rpe: ($event.target as HTMLInputElement).value })"
+              placeholder="—"
+              inputmode="numeric"
+              class="w-10 rounded-md border bg-background/80 px-1 py-1 text-xs text-center font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-opacity"
+              :class="s.completed ? 'opacity-60' : ''"
+              title="RPE (1-10)"
+            />
+            <span class="text-[9px] text-muted-foreground/60 shrink-0">RPE</span>
+
             <!-- Custom checkbox button -->
             <button
               type="button"
@@ -245,6 +258,7 @@ import { useRestTimer } from '../composables/useRestTimer';
 interface ExerciseSet {
   reps: number;
   weight: number;
+  rpe?: number;
   completed: boolean;
 }
 
@@ -378,7 +392,7 @@ watch(
 );
 
 /** Edita un set específico */
-function updateSet(i: number, patch: { reps?: string | number; weight?: string | number }) {
+function updateSet(i: number, patch: { reps?: string | number; weight?: string | number; rpe?: string | number }) {
   if (!Array.isArray(local.value.sets)) local.value.sets = [];
 
   const s = local.value.sets[i] ?? { reps: 10, weight: 0, completed: false };
@@ -386,6 +400,7 @@ function updateSet(i: number, patch: { reps?: string | number; weight?: string |
     ...s,
     reps: patch.reps != null ? clamp(patch.reps, 0, 200) : s.reps,
     weight: patch.weight != null ? clamp(patch.weight, 0, 500) : s.weight,
+    rpe: patch.rpe != null ? (String(patch.rpe).trim() === '' ? undefined : clamp(patch.rpe, 1, 10)) : s.rpe,
   };
 }
 

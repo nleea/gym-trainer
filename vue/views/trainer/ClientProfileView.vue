@@ -18,15 +18,21 @@ import AssignNutritionPlanModal from '../../components/AssignNutritionPlanModal.
 import CreatePlanWithAIModal from '../../components/CreatePlanWithAIModal.vue';
 import AdherenceCard from '../../components/AdherenceCard.vue';
 import WeeklyVolumeChart from '../../components/WeeklyVolumeChart.vue';
+import StreakBadge from '../../components/StreakBadge.vue';
+import WellnessChart from '../../components/WellnessChart.vue';
 import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 import ClientDiaryTab from './ClientDiaryTab.vue'
 import ReportsTab from '../../components/ReportsTab.vue'
+import { useWellnessStore } from '../../stores/wellness.store'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const logsStore = useLogsStore();
 const authStore = useAuthStore();
 const clientStore = useClientsStore();
 const attendanceStore = useAttendanceStore();
 const evidencesStore = useEvidencesStore();
+const wellnessStore = useWellnessStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -133,12 +139,17 @@ watch(
       ];
 
       await Promise.all(fetches);
+
+      // Load wellness summary (non-blocking)
+      wellnessStore.loadSummary(id)
     } finally {
       loadingClient.value = false;
     }
   },
   { immediate: true },
 )
+
+const clientWellnessSummary = computed(() => wellnessStore.getSummary(clientId.value))
 
 async function refreshAssignedPlans() {
   const id = clientId.value
@@ -282,14 +293,40 @@ const statsData = computed(() => [
             />
           </div>
 
-          <!-- Name & Email -->
-          <div class="flex-1 min-w-0">
-            <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-foreground mb-1">
-              {{ client.name }}
-            </h1>
-            <p class="text-muted-foreground text-base">{{ client.email }}</p>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+                {{ client.name }}
+              </h1>
+              <span
+                v-if="clientWellnessSummary?.overloadAlert"
+                class="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-600"
+                :title="t('wellness.overloadTooltip')"
+              >⚠ {{ t('wellness.overloadAlert') }}</span>
+            </div>
+            <p class="text-sm text-muted-foreground">{{ client.email }}</p>
           </div>
         </div>
+
+        <button
+          @click="toggleStatus"
+          :class="[
+            'rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors',
+            client.status === 'active'
+              ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+              : 'bg-primary/10 text-primary hover:bg-primary/20',
+          ]"
+        >
+          {{ client.status === 'active' ? 'Desactivar' : 'Activar' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div class="rounded-2xl border border-border bg-card p-4">
+        <p class="text-sm text-muted-foreground">Asistencia semanal</p>
+        <p class="text-2xl font-bold text-foreground">{{ attendanceRate }}%</p>
       </div>
     </section>
 
@@ -336,11 +373,21 @@ const statsData = computed(() => [
       <div class="chart-card">
         <WeeklyVolumeChart :client-id="clientId" />
       </div>
-    </section>
+      <StreakBadge :client-id="clientId" />
+    </div>
 
-    <!-- Tabs Navigation -->
-    <nav class="tabs-container">
-      <div class="tabs-scroll">
+    <!-- Adherence + Volume -->
+    <div class="grid gap-4 lg:grid-cols-2">
+      <AdherenceCard :client-id="clientId" />
+      <WeeklyVolumeChart :client-id="clientId" />
+    </div>
+
+    <!-- Wellness trend -->
+    <WellnessChart :client-id="clientId" />
+
+    <!-- Tabs -->
+    <div class="overflow-x-auto rounded-2xl border border-border bg-card px-2 py-1.5">
+      <div class="flex min-w-max gap-1">
         <button
           v-for="tab in tabs"
           :key="tab.key"
@@ -659,7 +706,7 @@ const statsData = computed(() => [
                       :key="sidx"
                       class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground font-medium"
                     >
-                      {{ set.reps || 0 }} x {{ set.weight || 0 }}kg
+                      {{ set.reps || 0 }} reps · {{ set.weight || 0 }}kg<template v-if="set.rpe != null"> · RPE {{ set.rpe }}</template>
                     </span>
                   </div>
                 </div>

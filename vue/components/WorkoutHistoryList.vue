@@ -181,7 +181,7 @@ function formatDayNum(iso: string) {
                           :key="sidx"
                           class="rounded-full border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                         >
-                          {{ set.reps || 0 }}×{{ set.weight || 0 }}kg
+                          {{ set.reps || 0 }}×{{ set.weight || 0 }}kg<template v-if="set.rpe != null"> @{{ set.rpe }}</template>
                         </span>
                       </div>
                     </div>

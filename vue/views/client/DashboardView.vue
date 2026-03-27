@@ -70,6 +70,23 @@
     </div>
 
     <!-- ══════════════════════════════════════════════
+         DAILY WELLNESS PROMPT
+    ══════════════════════════════════════════════ -->
+    <div v-if="!wellnessCompletedToday" class="card-enter" style="--anim-delay: 60ms">
+      <router-link
+        to="/client/wellness"
+        class="checkin-banner checkin-pending"
+      >
+        <span class="text-xl flex-shrink-0">💚</span>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-foreground">{{ t('wellness.dashboardTitle') }}</p>
+          <p class="text-xs text-muted-foreground">{{ t('wellness.dashboardDesc') }}</p>
+        </div>
+        <span class="text-xs font-semibold text-primary flex-shrink-0 whitespace-nowrap">{{ t('wellness.dashboardCta') }}</span>
+      </router-link>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
          DAY PROGRESS BAR
     ══════════════════════════════════════════════ -->
     <div
@@ -197,14 +214,34 @@
             </svg>
           </div>
           <p class="stat-number">
-            {{ currentStreak }}<span class="stat-denom"> días</span>
+            {{ currentStreak }}<span class="stat-denom"> {{ t('streak.days') }}</span>
           </p>
-          <p class="stat-sub">Consistencia &gt; intensidad</p>
+          <p class="stat-sub">{{ t('streak.best') }}: {{ bestStreak }} {{ t('streak.days') }}</p>
         </div>
       </div>
 
     </div>
 
+    <!-- Readiness score (visible only if wellness logged today) -->
+    <div
+      v-if="readinessScore != null"
+      class="card-enter rounded-2xl border px-4 py-3 flex items-center gap-3"
+      :class="readinessScore >= 7 ? 'border-green-500/30 bg-green-500/5' : readinessScore >= 4 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5'"
+      style="--anim-delay: 500ms"
+    >
+      <span class="text-2xl">{{ readinessScore >= 7 ? '🔋' : readinessScore >= 4 ? '🔶' : '🪫' }}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-foreground">{{ t('wellness.readiness') }}</p>
+        <p class="text-xs text-muted-foreground">{{ readinessScore.toFixed(1) }} / 10</p>
+      </div>
+      <span
+        class="text-2xl font-black tabular-nums"
+        :class="readinessScore >= 7 ? 'text-green-500' : readinessScore >= 4 ? 'text-yellow-500' : 'text-red-500'"
+      >{{ readinessScore.toFixed(1) }}</span>
+    </div>
+
+    <!-- Achievements preview -->
+    <AchievementsPreview :client-id="clientId" />
 
     <!-- ══════════════════════════════════════════════
          MAIN SECTION — Workout (60%) + Nutrition (40%)
@@ -452,7 +489,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import type { MealLog } from '../../types';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -466,6 +503,9 @@ import {  getActiveWeekIndexFromAssignedAt } from "../../../lib/helpers";
 import { useI18n } from 'vue-i18n'
 import { useCheckinStore } from '../../stores/checkin.store';
 import { useNutritionStore } from '../../stores/nutrition.store';
+import { useStreakStore } from '../../stores/streak.store';
+import AchievementsPreview from '../../components/AchievementsPreview.vue';
+import { useWellnessStore } from '../../stores/wellness.store';
 
 const { t, locale } = useI18n();
 
@@ -480,6 +520,8 @@ const metricsStore = useMetricsStore();
 const clientStore = useClientsStore()
 const checkinStore = useCheckinStore();
 const nutritionStore = useNutritionStore();
+const streakStore = useStreakStore();
+const wellnessStore = useWellnessStore();
 
 // ✅ refs reactivos
 const { user } = storeToRefs(authStore);
@@ -510,6 +552,9 @@ watch(
       await clientStore.fetchPlanTrining(newClientId)
       await clientStore.fetchNutritionPlan(newClientId)
       await checkinStore.loadCurrentCheckin(newClientId)
+
+      loadStreak()
+      loadWellnessSummary()
     }
   },
   { immediate: true },
@@ -600,6 +645,7 @@ const waterProgressRatio = computed(() => {
 });
 
 const metricsProgressRatio = computed(() => (currentWeight.value != null ? 1 : 0));
+const wellnessProgressRatio = computed(() => (wellnessCompletedToday.value ? 1 : 0));
 
 /**
  * ✅ Calorías/macros del plan de hoy
@@ -648,33 +694,29 @@ const fatDelta = computed(() =>
 
 
 /**
- * ✅ Streak: días seguidos con trainingLogs
+ * ✅ Streak: fetched from store → repo → backend /clients/{id}/streak
  */
+const streakData = computed(() => streakStore.getStreak(clientId.value))
 
-function calcCurrentStreak(logs: { date: string | number | Date }[], allowSkipToday = true) {
-  const days = new Set(logs.map((l) => dayKey(l.date)));
-
-  const base = new Date();
-  if (allowSkipToday && !days.has(dayKey(base))) {
-    base.setDate(base.getDate() - 1);
-  }
-
-  let streak = 0;
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(base);
-    d.setDate(base.getDate() - i);
-    if (days.has(dayKey(d))) streak++;
-    else break;
-  }
-
-  return streak;
+async function loadStreak() {
+  if (!clientId.value) return
+  await streakStore.loadStreak(clientId.value)
 }
 
-const currentStreak = computed(() => {
-  const key = weekKey(clientId.value);
-  const logs = trainingLogsByWeekKey.value?.[key] ?? [];
-  return calcCurrentStreak(logs, true);
-});
+const currentStreak = computed(() => streakData.value?.current ?? 0)
+const bestStreak = computed(() => streakData.value?.best ?? 0)
+
+/**
+ * ✅ Wellness: summary con readiness, alerta, y check de hoy
+ */
+const wellnessSummary = computed(() => wellnessStore.getSummary(clientId.value))
+const wellnessCompletedToday = computed(() => wellnessSummary.value?.todayEntry != null)
+const readinessScore = computed(() => wellnessSummary.value?.readinessScore ?? null)
+
+async function loadWellnessSummary() {
+  if (!clientId.value) return
+  await wellnessStore.loadSummary(clientId.value)
+}
 
 /**
  * ✅ Entreno de hoy desde TrainingPlan.weeks[0].days (y verifica si ya se completó hoy)
@@ -705,7 +747,7 @@ const startWorkout = () => {
 
 // ─── UI-only computeds for the new dashboard layout ───────────────────────────
 
-/** 4 checkpoints del día con su estado completado */
+/** 5 checkpoints del día con su estado completado */
 const dayCheckpoints = computed(() => [
   {
     label: 'Entrenamiento',
@@ -727,6 +769,11 @@ const dayCheckpoints = computed(() => [
     icon: '📊',
     done: metricsProgressRatio.value >= 1,
   },
+  {
+    label: t('wellness.label'),
+    icon: '💚',
+    done: wellnessCompletedToday.value,
+  },
 ]);
 
 /** Porcentaje completado del día (0–100) */
@@ -735,9 +782,10 @@ const dayProgress = computed(() => {
     workoutProgressRatio.value +
     mealsProgressRatio.value +
     waterProgressRatio.value +
-    metricsProgressRatio.value;
+    metricsProgressRatio.value +
+    wellnessProgressRatio.value;
 
-  return Math.round((totalRatio / 4) * 100);
+  return Math.round((totalRatio / 5) * 100);
 });
 
 

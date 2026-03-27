@@ -288,6 +288,7 @@ function normalizeDraftExercise(ex: Record<string, unknown>, fallbackSource: 'pl
     sets: setsRaw.map((s: Record<string, unknown>) => ({
       reps: clamp(s?.reps as number ?? 10, 0, 200),
       weight: clamp(s?.weight as number ?? 0, 0, 500),
+      rpe: s?.rpe != null ? clamp(s.rpe as number, 1, 10) : undefined,
       completed: (s?.completed as boolean) ?? false,
     })),
   };
@@ -467,6 +468,7 @@ watch(
         merged.sets = savedSets.map((s: { reps: number; weight: number; rpe?: number; completed: boolean }) => ({
           reps: clamp(s.reps, 0, 200),
           weight: clamp(s.weight, 0, 500),
+          rpe: s.rpe != null ? clamp(s.rpe, 1, 10) : undefined,
           completed: s.completed ?? false,
         }));
         merged.setsCount = merged.sets.length;
@@ -502,6 +504,7 @@ watch(
           ).map((s: { reps: number; weight: number; rpe?: number; completed: boolean }) => ({
             reps: clamp(s.reps ?? 10, 0, 200),
             weight: clamp(s.weight ?? 0, 0, 500),
+            rpe: s.rpe != null ? clamp(s.rpe, 1, 10) : undefined,
             completed: s.completed ?? false,
           })),
         };
@@ -660,6 +663,7 @@ const saveWorkout = async () => {
           sets: (ex.sets ?? []).map((s: UiSet) => ({
             reps: clamp(s.reps, 0, 200),
             weight: clamp(s.weight, 0, 500),
+            rpe: s.rpe != null ? clamp(s.rpe, 1, 10) : undefined,
             completed: s.completed ?? false,
           })),
         };
