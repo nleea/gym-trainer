@@ -315,6 +315,9 @@ export type BodyMetricsEntry = {
   calfLeftCm?: number | null
   calfRightCm?: number | null
 
+  // --- calculados ---
+  leanMassKg?: number | null  // calculado por backend: weight × (1 - bodyFatPct/100)
+
   // --- extra ---
   heightCm?: number | null // útil para IMC (si no está fijo en el profile)
   notes?: string | null

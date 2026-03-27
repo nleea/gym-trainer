@@ -101,6 +101,8 @@ interface RawMetricsEntry extends Record<string, unknown> {
   calfLeftCm?: number | null
   calf_right_cm?: number | null
   calfRightCm?: number | null
+  lean_mass_kg?: number | null
+  leanMassKg?: number | null
   notes?: string | null
   photos?: string[] | null
   measurement_protocol?: string | null
@@ -152,6 +154,7 @@ function fromResponse(d: RawMetricsEntry): BodyMetricsEntry {
     thighRightCm: d.thigh_right_cm ?? d.thighRightCm ?? null,
     calfLeftCm: d.calf_left_cm ?? d.calfLeftCm ?? null,
     calfRightCm: d.calf_right_cm ?? d.calfRightCm ?? null,
+    leanMassKg: d.lean_mass_kg ?? d.leanMassKg ?? null,
     notes: d.notes ?? null,
     photos: d.photos ?? null,
     measurementProtocol: (d.measurement_protocol ?? d.measurementProtocol ?? null) as BodyMetricsEntry['measurementProtocol'],
@@ -250,4 +253,46 @@ export async function updateMetricsEntry(
 
 export async function deleteMetricsEntry(_clientId: string, entryId: string): Promise<void> {
   await api.delete(`/metrics/${entryId}`)
+}
+
+// ── Body composition history ─────────────────────────────────────────────────
+export interface BodyCompositionPoint {
+  date: string
+  bodyFatPct: number
+  leanMassKg: number
+  weightKg: number
+}
+
+interface RawCompositionPoint {
+  date: string
+  body_fat_pct: number
+  lean_mass_kg: number
+  weight_kg: number
+}
+
+function daysAgo(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return toYmdLocal(d)
+}
+
+export async function getBodyComposition(
+  clientId: string,
+  from?: string,
+  to?: string,
+): Promise<BodyCompositionPoint[]> {
+  const params = new URLSearchParams({
+    client_id: clientId,
+    from: from ?? daysAgo(365),
+    to: to ?? toYmdLocal(new Date()),
+  })
+  const res = await api.get<{ points: RawCompositionPoint[] }>(
+    `/metrics/body-composition?${params}`,
+  )
+  return res.points.map((p) => ({
+    date: p.date,
+    bodyFatPct: p.body_fat_pct,
+    leanMassKg: p.lean_mass_kg,
+    weightKg: p.weight_kg,
+  }))
 }

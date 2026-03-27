@@ -24,6 +24,7 @@
       "metrics": "Medidas",
       "nutrition": "Nutrición",
       "progress": "Progreso",
+      "achievements": "Logros",
       "settings": "Settings",
       "logout": "Cerrar sesión"
     },
@@ -239,6 +240,14 @@
         "boneMassKg": "Masa ósea (kg)",
         "bmrKcal": "BMR (kcal)"
       },
+      "bodyComposition": {
+        "title": "Composición corporal",
+        "subtitle": "Evolución de % grasa y masa magra",
+        "fatPct": "% Grasa corporal",
+        "leanMass": "Masa magra (kg)",
+        "noData": "Datos insuficientes para graficar",
+        "tip": "Registra cuello, cintura y cadera para calcular automáticamente."
+      },
       "record": {
         "title": "Registro",
         "date": "Fecha",
@@ -323,6 +332,15 @@
         "updated": "Medición actualizada.",
         "deleteConfirm": "¿Eliminar esta medición? Esto no se puede deshacer.",
         "deleteError": "Error eliminando"
+      },
+      "strength": {
+        "title": "Progreso de fuerza",
+        "subtitle": "Evolución del 1RM estimado",
+        "selectExercise": "Seleccionar ejercicio",
+        "noExercises": "No hay ejercicios registrados aún",
+        "noData": "Datos insuficientes para este ejercicio",
+        "estimated1rm": "1RM Estimado",
+        "best": "Mejor 1RM"
       }
     }
   },
@@ -425,5 +443,75 @@
       "save_success": "Configuración guardada correctamente",
       "save_error": "Error al guardar la configuración"
     }
+  },
+  "streak": {
+    "current": "Racha actual",
+    "best": "Mejor racha",
+    "days": "días",
+    "lastActivity": "Última actividad"
+  },
+  "rpe": {
+    "label": "Esfuerzo percibido (RPE)",
+    "short": "RPE",
+    "scale": "1 = fácil · 10 = máximo"
+  },
+  "achievements": {
+    "title": "Mis Logros",
+    "subtitle": "Desbloquea logros entrenando con consistencia.",
+    "unlocked": "Desbloqueado",
+    "locked": "Bloqueado",
+    "viewAll": "Ver todos",
+    "empty": "Entrena para desbloquear tu primer logro.",
+    "emptyTitle": "Sin logros aún",
+    "emptyDesc": "Registra entrenamientos, mantén tu racha y supera tus marcas para desbloquear logros.",
+    "noCategory": "No hay logros en esta categoría.",
+    "unlockedTitle": "¡Logro desbloqueado!",
+    "unlockedDesc": "Has alcanzado una nueva meta:",
+    "celebrate": "¡Genial! 💪",
+    "categories": {
+      "all": "Todos",
+      "workouts": "Entrenamientos",
+      "streak": "Racha",
+      "strength": "Fuerza",
+      "consistency": "Consistencia",
+      "milestones": "Hitos"
+    }
+  },
+  "wellness": {
+    "label": "Bienestar diario",
+    "title": "¿Cómo te sientes hoy?",
+    "subtitle": "Toma 30 segundos para registrar tu estado.",
+    "energy": "Energía",
+    "energyDesc": "¿Cómo está tu nivel de energía general?",
+    "sleep": "Calidad de sueño",
+    "sleepDesc": "¿Cómo dormiste anoche?",
+    "fatigue": "Fatiga muscular",
+    "fatigueDesc": "¿Qué tan cansados sientes tus músculos?",
+    "low": "Baja",
+    "high": "Alta",
+    "poor": "Mal",
+    "excellent": "Excelente",
+    "fresh": "Fresco",
+    "veryFatigued": "Muy fatigado",
+    "notes": "Notas (opcional)",
+    "notesPlaceholder": "Dolor, malestar, estrés, algo que tu trainer deba saber...",
+    "submit": "Registrar",
+    "saving": "Guardando...",
+    "skip": "Omitir",
+    "savedTitle": "¡Registrado!",
+    "savedDesc": "Tu trainer podrá ver cómo te sientes hoy.",
+    "dashboardTitle": "Bienestar de hoy",
+    "dashboardDesc": "Cuéntale a tu trainer cómo te sientes.",
+    "dashboardCta": "Registrar →",
+    "chartTitle": "Bienestar",
+    "chartSubtitle": "Tendencia últimos 30 días",
+    "noData": "Aún no hay registros de bienestar.",
+    "readiness": "Disposición hoy",
+    "overloadAlert": "Sobrecarga",
+    "overloadTooltip": "Fatiga muscular ≥ 4 por 3+ días consecutivos",
+    "volumeCorrelation": "Fatiga vs Volumen",
+    "volumeCorrelationSub": "Correlación últimas 12 semanas",
+    "avgFatigue": "Fatiga promedio",
+    "volume": "Volumen (kg)"
   }
 }

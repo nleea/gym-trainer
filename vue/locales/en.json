@@ -24,6 +24,7 @@
       "metrics": "Metrics",
       "nutrition": "Nutrition",
       "progress": "Progress",
+      "achievements": "Achievements",
       "settings": "Settings",
       "logout": "Log out"
     },
@@ -239,6 +240,14 @@
         "boneMassKg": "Bone mass (kg)",
         "bmrKcal": "BMR (kcal)"
       },
+      "bodyComposition": {
+        "title": "Body Composition",
+        "subtitle": "Body fat % and lean mass evolution",
+        "fatPct": "Body fat %",
+        "leanMass": "Lean mass (kg)",
+        "noData": "Not enough data to chart",
+        "tip": "Log neck, waist, and hip measurements for automatic calculation."
+      },
       "record": {
         "title": "Record",
         "date": "Date",
@@ -323,6 +332,15 @@
         "updated": "Measurement updated.",
         "deleteConfirm": "Delete this measurement? This cannot be undone.",
         "deleteError": "Error deleting"
+      },
+      "strength": {
+        "title": "Strength Progress",
+        "subtitle": "Estimated 1RM Evolution",
+        "selectExercise": "Select exercise",
+        "noExercises": "No logged exercises yet",
+        "noData": "Not enough data for this exercise",
+        "estimated1rm": "Estimated 1RM",
+        "best": "Best 1RM"
       }
     }
   },
@@ -425,5 +443,75 @@
       "save_success": "Configuration saved successfully",
       "save_error": "Error saving configuration"
     }
+  },
+  "streak": {
+    "current": "Current streak",
+    "best": "Best streak",
+    "days": "days",
+    "lastActivity": "Last activity"
+  },
+  "rpe": {
+    "label": "Rate of Perceived Exertion (RPE)",
+    "short": "RPE",
+    "scale": "1 = easy · 10 = max effort"
+  },
+  "achievements": {
+    "title": "My Achievements",
+    "subtitle": "Unlock achievements by training consistently.",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "viewAll": "View all",
+    "empty": "Train to unlock your first achievement.",
+    "emptyTitle": "No achievements yet",
+    "emptyDesc": "Log workouts, keep your streak, and beat your records to unlock achievements.",
+    "noCategory": "No achievements in this category.",
+    "unlockedTitle": "Achievement unlocked!",
+    "unlockedDesc": "You've reached a new milestone:",
+    "celebrate": "Awesome! 💪",
+    "categories": {
+      "all": "All",
+      "workouts": "Workouts",
+      "streak": "Streak",
+      "strength": "Strength",
+      "consistency": "Consistency",
+      "milestones": "Milestones"
+    }
+  },
+  "wellness": {
+    "label": "Daily Wellness",
+    "title": "How are you feeling today?",
+    "subtitle": "Take 30 seconds to log your state.",
+    "energy": "Energy",
+    "energyDesc": "How's your overall energy level?",
+    "sleep": "Sleep Quality",
+    "sleepDesc": "How did you sleep last night?",
+    "fatigue": "Muscle Fatigue",
+    "fatigueDesc": "How tired do your muscles feel?",
+    "low": "Low",
+    "high": "High",
+    "poor": "Poor",
+    "excellent": "Excellent",
+    "fresh": "Fresh",
+    "veryFatigued": "Very fatigued",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "Pain, discomfort, stress, anything your trainer should know...",
+    "submit": "Submit",
+    "saving": "Saving...",
+    "skip": "Skip",
+    "savedTitle": "Logged!",
+    "savedDesc": "Your trainer can now see how you're feeling today.",
+    "dashboardTitle": "Today's Wellness",
+    "dashboardDesc": "Tell your trainer how you're feeling.",
+    "dashboardCta": "Log →",
+    "chartTitle": "Wellness",
+    "chartSubtitle": "Last 30 days trend",
+    "noData": "No wellness entries yet.",
+    "readiness": "Today's readiness",
+    "overloadAlert": "Overload",
+    "overloadTooltip": "Muscle fatigue ≥ 4 for 3+ consecutive days",
+    "volumeCorrelation": "Fatigue vs Volume",
+    "volumeCorrelationSub": "Correlation over last 12 weeks",
+    "avgFatigue": "Avg fatigue",
+    "volume": "Volume (kg)"
   }
 }
