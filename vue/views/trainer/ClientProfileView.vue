@@ -239,7 +239,7 @@ const statsData = computed(() => [
   <!-- Main Content -->
   <div
     v-else-if="client"
-    class="w-full max-w-6xl mx-auto space-y-8 px-4 py-6 animate-in fade-in duration-500"
+    class="w-full mx-auto space-y-8 px-4 py-6 animate-in fade-in duration-500"
   >
     <!-- Hero Section -->
     <section class="profile-hero">
@@ -307,26 +307,6 @@ const statsData = computed(() => [
             <p class="text-sm text-muted-foreground">{{ client.email }}</p>
           </div>
         </div>
-
-        <button
-          @click="toggleStatus"
-          :class="[
-            'rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors',
-            client.status === 'active'
-              ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
-              : 'bg-primary/10 text-primary hover:bg-primary/20',
-          ]"
-        >
-          {{ client.status === 'active' ? 'Desactivar' : 'Activar' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-      <div class="rounded-2xl border border-border bg-card p-4">
-        <p class="text-sm text-muted-foreground">Asistencia semanal</p>
-        <p class="text-2xl font-bold text-foreground">{{ attendanceRate }}%</p>
       </div>
     </section>
 
@@ -366,21 +346,12 @@ const statsData = computed(() => [
     </section>
 
     <!-- Adherence & Volume Charts -->
-    <section class="grid gap-5 lg:grid-cols-2">
-      <div class="chart-card">
-        <AdherenceCard :client-id="clientId" />
-      </div>
-      <div class="chart-card">
-        <WeeklyVolumeChart :client-id="clientId" />
-      </div>
-      <StreakBadge :client-id="clientId" />
-    </div>
-
-    <!-- Adherence + Volume -->
-    <div class="grid gap-4 lg:grid-cols-2">
+    <section class="grid gap-4 lg:grid-cols-2">
       <AdherenceCard :client-id="clientId" />
       <WeeklyVolumeChart :client-id="clientId" />
-    </div>
+    </section>
+
+    <StreakBadge :client-id="clientId" />
 
     <!-- Wellness trend -->
     <WellnessChart :client-id="clientId" />
@@ -406,9 +377,9 @@ const statsData = computed(() => [
               {{ tab.badge }}
             </span>
           </span>
-        </button>
-      </div>
-    </nav>
+      </button>
+    </div>
+    </div>
 
     <!-- Tab Content -->
     <div class="tab-content">
@@ -831,8 +802,8 @@ const statsData = computed(() => [
           :client-id="clientId"
           :type="activePhotoType"
           :can-upload="true"
-        />
-      </div>
+      />
+    </div>
     </div>
   </div>
 
