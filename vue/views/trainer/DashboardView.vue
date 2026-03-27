@@ -71,6 +71,7 @@
           v-for="client in filteredClients"
           :key="client.id"
           :client="client"
+          :engagement="engagementStore.getByClientId(client.id)"
           @quick-plan="openQuickPlan"
         />
       </div>
@@ -101,6 +102,7 @@ import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTrainerStore } from '../../stores/trainer.store'
 import { useAuthStore } from '../../stores/auth'
+import { useEngagementStore } from '../../stores/engagement.store'
 import TrainerStatsRow from '../../components/trainer/TrainerStatsRow.vue'
 import AlertsBanner from '../../components/trainer/AlertsBanner.vue'
 import ClientSummaryCard from '../../components/trainer/ClientSummaryCard.vue'
@@ -109,6 +111,7 @@ import type { DashboardClient } from '../../repo/trainerRepo'
 
 const trainerStore = useTrainerStore()
 const authStore = useAuthStore()
+const engagementStore = useEngagementStore()
 const { user } = storeToRefs(authStore)
 
 const firstName = computed(() => user.value?.name?.split(' ')[0] ?? 'Entrenador')
@@ -123,7 +126,7 @@ const today = computed(() => {
 
 // Filter / search
 const search = ref('')
-const activeFilter = ref<'all' | 'alerts' | 'active' | 'inactive'>('all')
+const activeFilter = ref<'all' | 'alerts' | 'active' | 'inactive' | 'at_risk'>('all')
 
 const filters = computed(() => {
   const clients = trainerStore.clients
@@ -143,6 +146,11 @@ const filters = computed(() => {
       label: 'Inactivos',
       count: clients.filter((c) => c.weeklyWorkouts === 0).length,
     },
+    {
+      key: 'at_risk' as const,
+      label: 'En riesgo',
+      count: engagementStore.atRiskCount,
+    },
   ]
 })
 
@@ -155,6 +163,9 @@ const filteredClients = computed(() => {
     list = list.filter((c) => c.weeklyWorkouts > 0)
   } else if (activeFilter.value === 'inactive') {
     list = list.filter((c) => c.weeklyWorkouts === 0)
+  } else if (activeFilter.value === 'at_risk') {
+    const atRiskIds = new Set(engagementStore.getAtRisk.map((e) => e.clientId))
+    list = list.filter((c) => atRiskIds.has(c.id))
   }
 
   if (search.value.trim()) {
@@ -178,6 +189,7 @@ function onPlanAssigned(_tab: 'training' | 'nutrition') {
 
 onMounted(() => {
   trainerStore.loadDashboard()
+  engagementStore.loadEngagement()
 })
 </script>
 
