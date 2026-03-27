@@ -35,6 +35,8 @@ import ClientSettingsView from '../views/client/SettingsView.vue'
 import AppearanceSettings from '../views/settings/AppearanceSettings.vue'
 import MetricsView from '../views/client/MetricsView.vue'
 import WeeklyCheckinView from '../views/client/WeeklyCheckinView.vue'
+import AchievementsView from '../views/client/AchievementsView.vue'
+import DailyWellnessView from '../views/client/DailyWellnessView.vue'
 import ExerciseLibraryView from '../views/shared/ExerciseLibraryView.vue'
 
 
@@ -110,6 +112,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'settings', name: 'client-settings', component: ClientSettingsView, meta: { viewTheme: 'settings' } },
       { path: 'settings/appearance', name: 'client-appearance', component: AppearanceSettings, meta: { viewTheme: 'settings' } },
       { path: 'weekly-checkin', name: 'weekly-checkin', component: WeeklyCheckinView },
+      { path: 'achievements', name: 'achievements', component: AchievementsView, meta: { viewTheme: 'achievements' } },
+      { path: 'wellness', name: 'daily-wellness', component: DailyWellnessView },
 
     ]
   },

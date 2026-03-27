@@ -12,16 +12,14 @@ import {
   LinearScale,
   CategoryScale,
 } from 'chart.js'
-import { api } from '../api'
+import { volumeMetricsRepo, type WeeklyVolume } from '../repo/volumeMetrics.repo'
 import { toYmdLocal } from '../../lib/utils'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, BarController, LinearScale, CategoryScale)
 
 const props = defineProps<{ clientId: string }>()
 
-type WeekPoint = { week: string; volume: number }
-
-const data = ref<WeekPoint[]>([])
+const data = ref<WeeklyVolume[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
@@ -30,7 +28,7 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    data.value = await api.get<WeekPoint[]>(`/clients/${props.clientId}/weekly-volume`)
+    data.value = await volumeMetricsRepo.getWeeklyVolume(props.clientId)
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Error al cargar el volumen semanal'
   } finally {

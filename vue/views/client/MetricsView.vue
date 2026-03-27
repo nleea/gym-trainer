@@ -11,6 +11,9 @@ import PhotoTimeline from '@/components/photos/PhotoTimeline.vue'
 import BodyRender from '@/components/body/BodyRender.vue'
 import WeeklyVolumeChart from '@/components/WeeklyVolumeChart.vue'
 import AdherenceCard from '@/components/AdherenceCard.vue'
+import OneRepMaxChart from '@/components/OneRepMaxChart.vue'
+import BodyCompositionChart from '@/components/BodyCompositionChart.vue'
+import WellnessVolumeChart from '@/components/WellnessVolumeChart.vue'
 
 const { t } = useI18n();
 
@@ -626,6 +629,15 @@ onMounted(load);
             <WeeklyVolumeChart :client-id="resolvedClientId" />
             <AdherenceCard :client-id="resolvedClientId" />
           </div>
+
+          <!-- Strength Progress (1RM) -->
+          <OneRepMaxChart :client-id="resolvedClientId" />
+
+          <!-- Body Composition (% grasa + masa magra) -->
+          <BodyCompositionChart :client-id="resolvedClientId" />
+
+          <!-- Wellness vs Volume correlation (trainer only) -->
+          <WellnessVolumeChart v-if="!isClient" :client-id="resolvedClientId" />
 
           <!-- Latest photos -->
           <div class="rounded-2xl border border-border/70 bg-background/50 p-4">

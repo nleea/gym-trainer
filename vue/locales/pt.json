@@ -24,6 +24,7 @@
       "metrics": "Medidas",
       "nutrition": "Nutrição",
       "progress": "Progresso",
+      "achievements": "Conquistas",
       "settings": "Configurações",
       "logout": "Sair"
     },
@@ -239,6 +240,14 @@
         "boneMassKg": "Massa óssea (kg)",
         "bmrKcal": "TMB (kcal)"
       },
+      "bodyComposition": {
+        "title": "Composição corporal",
+        "subtitle": "Evolução de % gordura e massa magra",
+        "fatPct": "% Gordura corporal",
+        "leanMass": "Massa magra (kg)",
+        "noData": "Dados insuficientes para gráfico",
+        "tip": "Registre pescoço, cintura e quadril para cálculo automático."
+      },
       "record": {
         "title": "Registro",
         "date": "Data",
@@ -323,6 +332,15 @@
         "updated": "Medição atualizada.",
         "deleteConfirm": "Excluir esta medição? Isso não pode ser desfeito.",
         "deleteError": "Erro ao excluir"
+      },
+      "strength": {
+        "title": "Progresso de força",
+        "subtitle": "Evolução do 1RM estimado",
+        "selectExercise": "Selecionar exercício",
+        "noExercises": "Nenhum exercício registrado ainda",
+        "noData": "Dados insuficientes para este exercício",
+        "estimated1rm": "1RM Estimado",
+        "best": "Melhor 1RM"
       }
     }
   },
@@ -425,5 +443,75 @@
       "save_success": "Configuração salva com sucesso",
       "save_error": "Erro ao salvar a configuração"
     }
+  },
+  "streak": {
+    "current": "Sequência atual",
+    "best": "Melhor sequência",
+    "days": "dias",
+    "lastActivity": "Última atividade"
+  },
+  "rpe": {
+    "label": "Percepção de esforço (RPE)",
+    "short": "RPE",
+    "scale": "1 = fácil · 10 = esforço máximo"
+  },
+  "achievements": {
+    "title": "Minhas Conquistas",
+    "subtitle": "Desbloqueie conquistas treinando com consistência.",
+    "unlocked": "Desbloqueado",
+    "locked": "Bloqueado",
+    "viewAll": "Ver todas",
+    "empty": "Treine para desbloquear sua primeira conquista.",
+    "emptyTitle": "Sem conquistas ainda",
+    "emptyDesc": "Registre treinos, mantenha sua sequência e supere seus recordes para desbloquear conquistas.",
+    "noCategory": "Não há conquistas nesta categoria.",
+    "unlockedTitle": "Conquista desbloqueada!",
+    "unlockedDesc": "Você alcançou uma nova meta:",
+    "celebrate": "Incrível! 💪",
+    "categories": {
+      "all": "Todas",
+      "workouts": "Treinos",
+      "streak": "Sequência",
+      "strength": "Força",
+      "consistency": "Consistência",
+      "milestones": "Marcos"
+    }
+  },
+  "wellness": {
+    "label": "Bem-estar diário",
+    "title": "Como você está se sentindo hoje?",
+    "subtitle": "Leve 30 segundos para registrar seu estado.",
+    "energy": "Energia",
+    "energyDesc": "Como está seu nível geral de energia?",
+    "sleep": "Qualidade do sono",
+    "sleepDesc": "Como você dormiu ontem à noite?",
+    "fatigue": "Fadiga muscular",
+    "fatigueDesc": "Quão cansados seus músculos estão?",
+    "low": "Baixa",
+    "high": "Alta",
+    "poor": "Ruim",
+    "excellent": "Excelente",
+    "fresh": "Descansado",
+    "veryFatigued": "Muito fatigado",
+    "notes": "Notas (opcional)",
+    "notesPlaceholder": "Dor, desconforto, estresse, algo que seu treinador deva saber...",
+    "submit": "Registrar",
+    "saving": "Salvando...",
+    "skip": "Pular",
+    "savedTitle": "Registrado!",
+    "savedDesc": "Seu treinador poderá ver como você está se sentindo hoje.",
+    "dashboardTitle": "Bem-estar de hoje",
+    "dashboardDesc": "Conte ao seu treinador como se sente.",
+    "dashboardCta": "Registrar →",
+    "chartTitle": "Bem-estar",
+    "chartSubtitle": "Tendência dos últimos 30 dias",
+    "noData": "Nenhum registro de bem-estar ainda.",
+    "readiness": "Disposição de hoje",
+    "overloadAlert": "Sobrecarga",
+    "overloadTooltip": "Fadiga muscular ≥ 4 por 3+ dias consecutivos",
+    "volumeCorrelation": "Fadiga vs Volume",
+    "volumeCorrelationSub": "Correlação últimas 12 semanas",
+    "avgFatigue": "Fadiga média",
+    "volume": "Volume (kg)"
   }
 }
