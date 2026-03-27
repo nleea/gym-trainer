@@ -75,6 +75,13 @@
       />
     </div>
 
+    <!-- ── Engagement activity ── -->
+    <div v-if="engagement" class="activity-summary">
+      <span>{{ engagement.daysActive7d }}d/7 activo</span>
+      <span class="metric-sep-inline">·</span>
+      <span>{{ engagement.daysActive30d }}d/30 activo</span>
+    </div>
+
     <!-- ── Check-in badge ── -->
     <div v-if="client.lastCheckin" class="checkin-badge">
       <span class="text-base">{{ moodEmoji(client.lastCheckin.mood) }}</span>
@@ -178,11 +185,15 @@ import {
 import type { TooltipItem } from 'chart.js'
 import { format, parseISO, startOfWeek, addDays } from 'date-fns'
 import type { DashboardClient } from '../../repo/trainerRepo'
+import type { ClientEngagement } from '../../repo/engagement.repo'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip)
 
-const props  = defineProps<{ client: DashboardClient }>()
-const emit   = defineEmits<{ (e: 'quickPlan', clientId: string): void }>()
+const props = defineProps<{
+  client: DashboardClient
+  engagement?: ClientEngagement | null
+}>()
+const emit = defineEmits<{ (e: 'quickPlan', clientId: string): void }>()
 
 const expanded = ref(false)
 
@@ -250,13 +261,14 @@ function moodEmoji(m: string | null) { return m ? (MOOD_MAP[m]?.emoji ?? '') : '
 function moodLabel(m: string | null) { return m ? (MOOD_MAP[m]?.label ?? m) : '' }
 
 // ── Alerts ────────────────────────────────────────────────────────
-const CRITICAL = new Set(['no_workout_7_days'])
+const CRITICAL = new Set(['no_workout_7_days', 'at_risk'])
 function isCritical(a: string) { return CRITICAL.has(a) }
 const ALERT_LABELS: Record<string, string> = {
   no_workout_7_days:  '7 dias sin entrenar',
   no_workout_3_days:  '3 dias sin entrenar',
   no_checkin:         'Sin check-in',
   no_metrics_2_weeks: 'Sin metricas',
+  at_risk:            'En riesgo',
 }
 function alertLabel(a: string) { return ALERT_LABELS[a] ?? a }
 
@@ -354,6 +366,18 @@ function formatDate(iso: string) {
 }
 .dot-trained { background: var(--primary); }
 .dot-rest    { background: var(--muted); }
+
+.activity-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 14px 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.metric-sep-inline {
+  color: var(--border);
+}
 
 .checkin-badge {
   display: flex;

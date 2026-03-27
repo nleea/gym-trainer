@@ -62,9 +62,10 @@ const ALERT_LABELS: Record<string, string> = {
   no_workout_3_days:   'Sin entrenar 3 dias',
   no_checkin:          'Sin check-in esta semana',
   no_metrics_2_weeks:  'Sin metricas 2 semanas',
+  at_risk:             'En riesgo',
 }
 
-const CRITICAL = new Set(['no_workout_7_days'])
+const CRITICAL = new Set(['no_workout_7_days', 'at_risk'])
 
 function isCritical(alerts: string[]) {
   return alerts.some((a) => CRITICAL.has(a))
@@ -72,7 +73,7 @@ function isCritical(alerts: string[]) {
 
 function topAlertLabel(alerts: string[]) {
   // Priority order
-  const order = ['no_workout_7_days', 'no_workout_3_days', 'no_checkin', 'no_metrics_2_weeks']
+  const order = ['at_risk', 'no_workout_7_days', 'no_workout_3_days', 'no_checkin', 'no_metrics_2_weeks']
   const top = order.find((a) => alerts.includes(a)) ?? alerts[0]
   return ALERT_LABELS[top] ?? top
 }
