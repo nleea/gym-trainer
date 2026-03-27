@@ -246,71 +246,94 @@
     <!-- ══════════════════════════════════════════════
          MAIN SECTION — Workout (60%) + Nutrition (40%)
     ══════════════════════════════════════════════ -->
-    <div class="grid gap-4 lg:grid-cols-[3fr_2fr]">
+    <div class="grid gap-5 lg:grid-cols-[3fr_2fr]">
 
       <!-- ─────────────────── WORKOUT CARD ─────────────────── -->
-      <section
-        class="card-enter overflow-hidden rounded-2xl border bg-card"
-        style="--anim-delay: 480ms"
-      >
+      <section class="card-enter today-card" style="--anim-delay: 480ms">
+
         <!-- Card header -->
-        <div class="flex items-center justify-between border-b px-4 py-4 sm:px-6">
+        <div class="today-card-header">
           <div class="flex items-center gap-3">
-            <h2 class="text-base font-bold text-foreground">{{ t('client.dashboard.workoutToday') }}</h2>
-            <span class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase capitalize tracking-wide text-muted-foreground">
-              {{ dayKeyToday }}
-            </span>
+            <div class="today-card-icon today-card-icon--workout">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                <path d="M13 2L3 11h7l-1 7 9-9h-7l2-7z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="today-card-title">{{ t('client.dashboard.workoutToday') }}</h2>
+              <p class="today-card-subtitle capitalize">{{ dayKeyToday }}</p>
+            </div>
           </div>
-          <router-link
-            to="/client/training"
-            class="inline-flex items-center gap-0.5 text-xs font-semibold text-primary hover:underline"
-          >
-            Ver plan <span aria-hidden="true">→</span>
+          <router-link to="/client/training" class="today-card-link">
+            Ver plan
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
           </router-link>
         </div>
 
-        <div class="p-4 sm:p-6">
+        <div class="today-card-body">
           <!-- Workout exists -->
-          <div v-if="todayWorkout" class="space-y-5">
-            <p class="text-xs text-muted-foreground">
-              Basado en tu plan asignado · {{ todayWorkout.exercises.length }} ejercicios · descanso {{ todayWorkout.exercises?.[0]?.rest ?? 0 }}s
-            </p>
+          <div v-if="todayWorkout">
+
+            <!-- Meta row -->
+            <div class="workout-meta-row">
+              <span class="workout-meta-pill">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3">
+                  <circle cx="7" cy="7" r="5.5"/><path d="M7 4.5V7l1.5 1.5"/>
+                </svg>
+                {{ todayWorkout.exercises?.[0]?.rest ?? 0 }}s descanso
+              </span>
+              <span class="workout-meta-pill">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3">
+                  <rect x="1.5" y="4" width="11" height="8" rx="1.5"/>
+                  <path d="M5 4V2.5M9 4V2.5"/>
+                </svg>
+                {{ todayWorkout.exercises.length }} ejercicios
+              </span>
+              <span v-if="todayWorkout.completed" class="workout-meta-pill workout-meta-pill--done">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3">
+                  <path d="M2.5 7l3 3 6-6"/>
+                </svg>
+                Completado
+              </span>
+            </div>
 
             <!-- Exercise list -->
-            <div class="space-y-2">
+            <div class="exercise-list">
               <div
-                v-for="exercise in todayWorkout.exercises.slice(0, 4)"
+                v-for="(exercise, idx) in todayWorkout.exercises.slice(0, 5)"
                 :key="exercise.id"
-                :class="['exercise-row', todayWorkout.completed ? 'exercise-completed' : '']"
+                :class="['exercise-item', todayWorkout.completed ? 'exercise-item--done' : '']"
               >
+                <!-- Number -->
+                <span class="exercise-num">{{ String(idx + 1).padStart(2, '0') }}</span>
+
+                <!-- Info -->
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-semibold text-foreground">{{ exercise.name }}</p>
-                  <p class="text-xs text-muted-foreground">{{ exercise.sets }}×{{ exercise.reps }} · {{ exercise.rest }}s</p>
+                  <p class="exercise-name">{{ exercise.name }}</p>
+                  <p class="exercise-detail">{{ exercise.sets }} series · {{ exercise.reps }} reps</p>
                 </div>
-                <div class="flex flex-shrink-0 items-center gap-1.5">
-                  <span
-                    v-if="exercise.weight"
-                    class="rounded-lg bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
-                  >
-                    {{ exercise.weight }}kg
-                  </span>
+
+                <!-- Right side -->
+                <div class="flex flex-shrink-0 items-center gap-2">
+                  <span v-if="exercise.weight" class="exercise-weight">{{ exercise.weight }} kg</span>
                   <svg
                     v-if="todayWorkout.completed"
-                    class="h-4 w-4 flex-shrink-0"
-                    style="color: var(--chart-2)"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    class="exercise-check"
                   >
-                    <path d="M3 8l4 4 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3 8l3.5 3.5 6.5-7"/>
                   </svg>
                 </div>
               </div>
 
               <p
-                v-if="todayWorkout.exercises.length > 4"
-                class="pt-1 text-center text-xs text-muted-foreground"
+                v-if="todayWorkout.exercises.length > 5"
+                class="exercise-more"
               >
-                +{{ todayWorkout.exercises.length - 4 }} ejercicios más
+                +{{ todayWorkout.exercises.length - 5 }} más
               </p>
             </div>
 
@@ -318,33 +341,39 @@
             <button
               v-if="!todayWorkout.completed"
               @click="startWorkout"
-              class="btn-workout-start w-full"
+              class="today-cta today-cta--primary"
             >
+              <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+              </svg>
               {{ t('client.dashboard.startWorkout') }}
             </button>
             <router-link
               v-else
               to="/client/daily-log"
-              class="btn-workout-done block w-full text-center"
+              class="today-cta today-cta--done"
             >
-              Ver entrenamiento registrado ✓
+              Ver entrenamiento registrado
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                <path d="M3 8h10M9 4l4 4-4 4"/>
+              </svg>
             </router-link>
           </div>
 
           <!-- No workout -->
-          <div v-else class="flex flex-col items-center justify-center py-14 text-center">
-            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-              <svg class="h-7 w-7 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
+          <div v-else class="today-empty">
+            <div class="today-empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-muted-foreground">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>
               </svg>
             </div>
-            <p class="text-sm font-semibold text-foreground">Hoy no hay entrenamiento</p>
-            <p class="mt-1 text-xs text-muted-foreground">Contacta a tu trainer para actualizar tu plan</p>
-            <router-link to="/client/training" class="mt-4 text-xs font-semibold text-primary hover:underline">
-              Ver mi plan →
+            <p class="today-empty-title">Hoy no hay entrenamiento</p>
+            <p class="today-empty-desc">Contacta a tu trainer para actualizar tu plan</p>
+            <router-link to="/client/training" class="today-card-link mt-4">
+              Ver mi plan
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                <path d="M3 8h10M9 4l4 4-4 4"/>
+              </svg>
             </router-link>
           </div>
         </div>
@@ -352,133 +381,134 @@
 
 
       <!-- ─────────────────── NUTRITION CARD ─────────────────── -->
-      <section
-        class="card-enter overflow-hidden rounded-2xl border bg-card"
-        style="--anim-delay: 560ms"
-      >
+      <section class="card-enter today-card" style="--anim-delay: 560ms">
+
         <!-- Card header -->
-        <div class="flex items-center justify-between border-b px-4 py-4 sm:px-6">
-          <h2 class="text-base font-bold text-foreground">{{ t('client.dashboard.nutritionToday') }}</h2>
-          <router-link
-            to="/client/nutrition"
-            class="inline-flex items-center gap-0.5 text-xs font-semibold text-primary hover:underline"
-          >
-            Ver plan <span aria-hidden="true">→</span>
+        <div class="today-card-header">
+          <div class="flex items-center gap-3">
+            <div class="today-card-icon today-card-icon--nutrition">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                <path d="M10 2C6 4 4 8 4 11a6 6 0 0012 0c0-3-2-7-6-9z"/>
+                <path d="M10 11v5"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="today-card-title">{{ t('client.dashboard.nutritionToday') }}</h2>
+              <p class="today-card-subtitle">
+                {{ todayNutrition.filter(m => m.registered).length }}/{{ todayNutrition.length }} comidas
+              </p>
+            </div>
+          </div>
+          <router-link to="/client/nutrition" class="today-card-link">
+            Ver plan
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
           </router-link>
         </div>
 
-        <div class="p-4 sm:p-6">
+        <div class="today-card-body">
           <!-- Nutrition plan exists -->
           <div v-if="todayNutrition.length > 0" class="space-y-5">
 
-            <!-- Macro rings -->
-            <div class="flex items-end justify-between gap-2 overflow-x-auto pb-1 sm:justify-around">
+            <!-- Macro bars -->
+            <div class="macro-bars">
 
-              <!-- Proteína -->
-              <div class="macro-ring-wrap">
-                <div class="macro-ring">
-                  <svg viewBox="0 0 70 70" class="macro-ring-svg">
-                    <circle cx="35" cy="35" r="28" class="macro-track"/>
-                    <circle
-                      cx="35" cy="35" r="28"
-                      class="macro-fill macro-protein"
-                      :style="{
-                        '--ring-to': String(175.9 * (1 - Math.min(1, totalProtein > 0
-                          ? todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.protein || 0), 0) / totalProtein
-                          : 0)))
-                      }"
-                    />
-                  </svg>
-                  <div class="macro-center">
-                    <span class="macro-val">{{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.protein || 0), 0) }}</span>
-                    <span class="macro-unit">g</span>
-                  </div>
+              <!-- Calorias highlight -->
+              <div class="macro-cal-row">
+                <div class="macro-cal-left">
+                  <span class="macro-cal-val">
+                    {{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) }}
+                  </span>
+                  <span class="macro-cal-unit">/ {{ totalCalories }} kcal</span>
                 </div>
-                <p class="macro-name">Proteína</p>
+                <span class="macro-cal-pct">
+                  {{ totalCalories > 0 ? Math.round(todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) / totalCalories * 100) : 0 }}%
+                </span>
+              </div>
+              <div class="macro-bar-track">
+                <div
+                  class="macro-bar-fill macro-bar-fill--cal"
+                  :style="`width: ${totalCalories > 0 ? Math.min(100, Math.round(todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) / totalCalories * 100)) : 0}%`"
+                />
               </div>
 
-              <!-- Carbs -->
-              <div class="macro-ring-wrap">
-                <div class="macro-ring">
-                  <svg viewBox="0 0 70 70" class="macro-ring-svg">
-                    <circle cx="35" cy="35" r="28" class="macro-track"/>
-                    <circle
-                      cx="35" cy="35" r="28"
-                      class="macro-fill macro-carbs"
-                      :style="{
-                        '--ring-to': String(175.9 * (1 - Math.min(1, totalCarbs > 0
-                          ? todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.carbs || 0), 0) / totalCarbs
-                          : 0)))
-                      }"
+              <!-- Proteina + Carbs side by side -->
+              <div class="grid grid-cols-2 gap-3 mt-1">
+
+                <div>
+                  <div class="macro-bar-label-row">
+                    <span class="macro-bar-label">Proteína</span>
+                    <span class="macro-bar-nums">
+                      {{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.protein || 0), 0) }}<span class="macro-bar-total">/{{ totalProtein }}g</span>
+                    </span>
+                  </div>
+                  <div class="macro-bar-track macro-bar-track--sm">
+                    <div
+                      class="macro-bar-fill macro-bar-fill--protein"
+                      :style="`width: ${totalProtein > 0 ? Math.min(100, Math.round(todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.protein || 0), 0) / totalProtein * 100)) : 0}%`"
                     />
-                  </svg>
-                  <div class="macro-center">
-                    <span class="macro-val">{{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.carbs || 0), 0) }}</span>
-                    <span class="macro-unit">g</span>
                   </div>
                 </div>
-                <p class="macro-name">Carbs</p>
-              </div>
 
-              <!-- Calorías -->
-              <div class="macro-ring-wrap">
-                <div class="macro-ring">
-                  <svg viewBox="0 0 70 70" class="macro-ring-svg">
-                    <circle cx="35" cy="35" r="28" class="macro-track"/>
-                    <circle
-                      cx="35" cy="35" r="28"
-                      class="macro-fill macro-calories"
-                      :style="{
-                        '--ring-to': String(175.9 * (1 - Math.min(1, totalCalories > 0
-                          ? todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) / totalCalories
-                          : 0)))
-                      }"
+                <div>
+                  <div class="macro-bar-label-row">
+                    <span class="macro-bar-label">Carbs</span>
+                    <span class="macro-bar-nums">
+                      {{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.carbs || 0), 0) }}<span class="macro-bar-total">/{{ totalCarbs }}g</span>
+                    </span>
+                  </div>
+                  <div class="macro-bar-track macro-bar-track--sm">
+                    <div
+                      class="macro-bar-fill macro-bar-fill--carbs"
+                      :style="`width: ${totalCarbs > 0 ? Math.min(100, Math.round(todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.carbs || 0), 0) / totalCarbs * 100)) : 0}%`"
                     />
-                  </svg>
-                  <div class="macro-center">
-                    <span class="macro-val macro-val-sm">{{ todayNutrition.filter((m) => m.registered).reduce((s: number, m) => s + (m.calories || 0), 0) }}</span>
-                    <span class="macro-unit">kcal</span>
                   </div>
                 </div>
-                <p class="macro-name">Calorías</p>
-              </div>
 
+              </div>
             </div>
 
             <!-- Meals list -->
-            <div class="space-y-1.5">
+            <div class="meal-list">
               <div
                 v-for="meal in todayNutrition"
                 :key="meal.id"
-                :class="['meal-chip', meal.registered ? 'meal-done' : 'meal-pending']"
+                :class="['meal-item', meal.registered ? 'meal-item--done' : '']"
               >
-                <div :class="['meal-status-dot', meal.registered ? 'meal-dot-done' : 'meal-dot-pending']">
-                  <svg v-if="meal.registered" viewBox="0 0 10 10" fill="none" class="h-2.5 w-2.5">
-                    <path d="M2 5l2.5 2.5 3.5-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <div :class="['meal-dot', meal.registered ? 'meal-dot--done' : '']">
+                  <svg v-if="meal.registered" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-2.5 w-2.5">
+                    <path d="M2 5.5l2 2 4-4"/>
                   </svg>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-xs font-semibold text-foreground">{{ meal.name }}</p>
-                  <p class="text-[10px] text-muted-foreground">{{ ('time' in meal ? (meal as Record<string, unknown>).time : '') }} · {{ meal.calories }} kcal</p>
+                  <p class="meal-name">{{ meal.name }}</p>
+                  <p class="meal-detail">{{ ('time' in meal ? (meal as Record<string, unknown>).time : '') as string }}{{ (('time' in meal ? (meal as Record<string, unknown>).time : '') as string) ? ' · ' : '' }}{{ meal.calories }} kcal</p>
                 </div>
+                <span :class="['meal-type-badge', meal.registered ? 'meal-type-badge--done' : '']">
+                  {{ meal.type }}
+                </span>
               </div>
             </div>
 
           </div>
 
           <!-- No nutrition plan -->
-          <div v-else class="flex flex-col items-center justify-center py-14 text-center">
-            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-              <svg class="h-7 w-7 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div v-else class="today-empty">
+            <div class="today-empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-muted-foreground">
                 <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
                 <rect x="9" y="3" width="6" height="4" rx="1"/>
                 <path d="M9 12h6M9 16h4"/>
               </svg>
             </div>
-            <p class="text-sm font-semibold text-foreground">{{ t('client.dashboard.noPlan') }}</p>
-            <p class="mt-1 text-xs text-muted-foreground">{{ t('client.dashboard.contactTrainer') }}</p>
-            <router-link to="/client/nutrition" class="mt-4 text-xs font-semibold text-primary hover:underline">
-              Revisar mi plan →
+            <p class="today-empty-title">{{ t('client.dashboard.noPlan') }}</p>
+            <p class="today-empty-desc">{{ t('client.dashboard.contactTrainer') }}</p>
+            <router-link to="/client/nutrition" class="today-card-link mt-4">
+              Revisar mi plan
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+                <path d="M3 8h10M9 4l4 4-4 4"/>
+              </svg>
             </router-link>
           </div>
         </div>
@@ -951,126 +981,384 @@ const dayProgress = computed(() => {
   color: var(--muted-foreground);
 }
 
-/* ────────────────────────────────────────
-   Exercise rows (workout card)
-──────────────────────────────────────── */
-.exercise-row {
+/* ════════════════════════════════════════
+   TODAY CARDS (Workout + Nutrition)
+════════════════════════════════════════ */
+.today-card {
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.today-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
+  padding: 20px 22px 18px;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+
+.today-card-icon {
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: color-mix(in oklch, var(--muted) 45%, transparent);
-  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.exercise-completed {
-  background: color-mix(in oklch, var(--chart-2) 8%, transparent);
-  border-color: color-mix(in oklch, var(--chart-2) 22%, transparent);
-}
-
-/* ────────────────────────────────────────
-   Workout CTA buttons
-──────────────────────────────────────── */
-.btn-workout-start {
-  padding: 13px 20px;
-  border-radius: 12px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-size: 14px;
-  font-weight: 700;
-  text-align: center;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-}
-.btn-workout-start:hover { opacity: 0.88; }
-.btn-workout-start:active { transform: scale(0.98); }
-
-.btn-workout-done {
-  padding: 13px 20px;
-  border-radius: 12px;
-  border: 1.5px solid var(--primary);
+.today-card-icon--workout {
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
   color: var(--primary);
-  font-size: 14px;
+}
+.today-card-icon--nutrition {
+  background: color-mix(in oklch, var(--chart-2) 12%, transparent);
+  color: var(--chart-2);
+}
+
+.today-card-title {
+  font-size: 15px;
   font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+.today-card-subtitle {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  margin-top: 1px;
+  text-transform: capitalize;
+}
+
+.today-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
   text-decoration: none;
-  transition: background 0.15s;
+  opacity: 0.85;
+  transition: opacity 0.15s, gap 0.15s;
+  white-space: nowrap;
 }
-.btn-workout-done:hover {
-  background: color-mix(in oklch, var(--primary) 7%, transparent);
-}
+.today-card-link:hover { opacity: 1; gap: 6px; }
 
-/* ────────────────────────────────────────
-   Macro rings (nutrition card)
-──────────────────────────────────────── */
-@keyframes ring-draw {
-  to { stroke-dashoffset: var(--ring-to, 0); }
-}
-
-.macro-ring-wrap {
+/* ── Body ── */
+.today-card-body {
+  padding: 20px 22px 22px;
+  flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Workout meta pills ── */
+.workout-meta-row {
+  display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
-.macro-ring {
-  position: relative;
-  width: 72px;
-  height: 72px;
+.workout-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--muted) 55%, transparent);
+  border: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+  padding: 4px 9px;
+  border-radius: 999px;
 }
-.macro-ring-svg {
-  width: 72px;
-  height: 72px;
-  transform: rotate(-90deg);
+.workout-meta-pill--done {
+  color: var(--chart-2);
+  background: color-mix(in oklch, var(--chart-2) 10%, transparent);
+  border-color: color-mix(in oklch, var(--chart-2) 25%, transparent);
 }
 
-.macro-track {
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 6;
+/* ── Exercise list ── */
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+  flex: 1;
 }
-.macro-fill {
-  fill: none;
-  stroke-width: 6;
-  stroke-linecap: round;
-  stroke-dasharray: 175.9;
-  stroke-dashoffset: 175.9; /* start empty — animated to --ring-to */
-  animation: ring-draw 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 640ms;
-}
-.macro-protein  { stroke: var(--chart-1); }
-.macro-carbs    { stroke: var(--chart-2); }
-.macro-calories { stroke: var(--chart-4); }
 
-.macro-center {
-  position: absolute;
-  inset: 0;
+.exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  background: color-mix(in oklch, var(--muted) 30%, transparent);
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+}
+.exercise-item:hover {
+  background: color-mix(in oklch, var(--muted) 55%, transparent);
+  transform: translateX(2px);
+}
+.exercise-item--done {
+  background: color-mix(in oklch, var(--chart-2) 6%, transparent);
+  border-color: color-mix(in oklch, var(--chart-2) 20%, transparent);
+}
+
+.exercise-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  width: 20px;
+}
+.exercise-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.exercise-detail {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+}
+.exercise-weight {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--foreground);
+  background: color-mix(in oklch, var(--muted) 70%, transparent);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.exercise-check {
+  width: 16px;
+  height: 16px;
+  color: var(--chart-2);
+  flex-shrink: 0;
+}
+.exercise-more {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  padding-top: 4px;
+}
+
+/* ── CTA buttons ── */
+.today-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 13px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s;
+  margin-top: auto;
+}
+.today-cta:active { transform: scale(0.98); }
+.today-cta--primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.today-cta--primary:hover { opacity: 0.88; }
+.today-cta--done {
+  background: color-mix(in oklch, var(--chart-2) 10%, transparent);
+  color: var(--chart-2);
+  border: 1.5px solid color-mix(in oklch, var(--chart-2) 30%, transparent);
+}
+.today-cta--done:hover { background: color-mix(in oklch, var(--chart-2) 16%, transparent); }
+
+/* ── Empty state ── */
+.today-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 1.1;
+  text-align: center;
+  padding: 32px 16px;
+  flex: 1;
 }
-.macro-val {
-  font-size: 13px;
-  font-weight: 900;
+.today-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: color-mix(in oklch, var(--muted) 60%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.today-empty-title {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--foreground);
 }
-.macro-val-sm {
-  font-size: 10px;
+.today-empty-desc {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+  line-height: 1.5;
 }
-.macro-unit {
-  font-size: 9px;
+
+/* ── Macro bars (nutrition) ── */
+.macro-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.macro-cal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+.macro-cal-val {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.macro-cal-unit {
+  font-size: 12px;
   color: var(--muted-foreground);
   font-weight: 500;
 }
-.macro-name {
+.macro-cal-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--chart-4);
+}
+
+.macro-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--muted) 70%, transparent);
+  overflow: hidden;
+}
+.macro-bar-track--sm {
+  height: 5px;
+}
+
+@keyframes bar-grow {
+  from { width: 0%; }
+}
+.macro-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: bar-grow 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 500ms;
+}
+.macro-bar-fill--cal     { background: var(--chart-4); }
+.macro-bar-fill--protein { background: var(--chart-1); }
+.macro-bar-fill--carbs   { background: var(--chart-2); }
+
+.macro-bar-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.macro-bar-label {
   font-size: 10px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--muted-foreground);
-  text-align: center;
+}
+.macro-bar-nums {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.macro-bar-total {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+/* ── Meal list ── */
+.meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  background: color-mix(in oklch, var(--muted) 25%, transparent);
+  transition: background 0.15s;
+}
+.meal-item--done {
+  background: color-mix(in oklch, var(--chart-2) 6%, transparent);
+  border-color: color-mix(in oklch, var(--chart-2) 18%, transparent);
+}
+
+.meal-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in oklch, var(--border) 80%, transparent);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.meal-dot--done {
+  background: var(--chart-2);
+  border-color: var(--chart-2);
+  color: white;
+}
+.meal-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meal-detail {
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+}
+.meal-type-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--muted) 60%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.meal-type-badge--done {
+  color: var(--chart-2);
+  background: color-mix(in oklch, var(--chart-2) 10%, transparent);
 }
 
 /* ────────────────────────────────────────
